@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing import cast
 
-from presidio_analyzer import EntityRecognizer
+from presidio_analyzer import EntityRecognizer, PatternRecognizer
 from presidio_analyzer.recognizer_result import RecognizerResult
 from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import OperatorConfig
 from presidio_anonymizer.entities.engine.recognizer_result import (
-    RecognizerResult as AnonymizerRecognizerResult,
+  RecognizerResult as AnonymizerRecognizerResult,
 )
 
 from app.security.pii_detector.entity_recogniser import GLiNERRecognizer
@@ -19,87 +19,102 @@ type PIIMatches = dict[EntityType, Matches]
 
 @dataclass(frozen=True)
 class ScanResult:
-    pii_found: PIIMatches
-    cleaned: str
+  pii_found: PIIMatches
+  cleaned: str
 
 
 class PIIDetector:
-    """Detect and mask PII using regex recognizers combined with GLiNER."""
+  """Detect and mask PII using regex recognizers combined with GLiNER."""
 
-    def __init__(
-        self,
-        gliner_labels: tuple[str, ...] = ('person', 'address', 'organization'),
-    ) -> None:
-        self.recognizers: list[EntityRecognizer] = [
-            *PatternRecogniser.PATTERNS,
-            GLiNERRecognizer(gliner_labels),
-        ]
-        self.anonymizer = AnonymizerEngine()
+  def __init__(
+    self,
+    gliner_labels: tuple[str, ...] = (
+      'email address',
+      'ip address',
+      'social security number',
+      'credit card number',
+      'iban',
+      'date of birth',
+      'password',
+      'person',
+      'address',
+      'organization',
+    ),
+  ) -> None:
+    self.recognizers: list[EntityRecognizer] = [
+      *PatternRecogniser.PATTERNS,
+      GLiNERRecognizer(gliner_labels),
+    ]
+    self.anonymizer = AnonymizerEngine()
 
-    def _analyze(self, text: str) -> list[RecognizerResult]:
-        """Run every recognizer and merge their results into one span list."""
-        results: list[RecognizerResult] = []
-        for recognizer in self.recognizers:
-            results.extend(
-                recognizer.analyze(
-                    text,
-                    entities=[],
-                    nlp_artifacts=None,  # pyright: ignore[reportArgumentType]
-                )
-            )
+  def _analyze(self, text: str) -> list[RecognizerResult]:
+    """Run every recognizer and merge their results into one span list."""
+    pattern_results: list[RecognizerResult] = []
+    gliner_results: list[RecognizerResult] = []
+    for recognizer in self.recognizers:
+      results = recognizer.analyze(
+        text,
+        entities=[],
+        nlp_artifacts=None,  # pyright: ignore[reportArgumentType]
+      )
+      if isinstance(recognizer, PatternRecognizer):
+        pattern_results.extend(results)
+      else:
+        gliner_results.extend(results)
 
-        return self._resolve_overlaps(results)
+    return self._resolve_overlaps(pattern_results, gliner_results)
 
-    @staticmethod
-    def _resolve_overlaps(results: list[RecognizerResult]) -> list[RecognizerResult]:
-        """Keep the highest-confidence span when regex and GLiNER overlap."""
-        by_confidence = sorted(
-            results, key=lambda r: (r.score, r.end - r.start), reverse=True
-        )
+  @staticmethod
+  def _resolve_overlaps(
+    pattern_results: list[RecognizerResult], gliner_results: list[RecognizerResult]
+  ) -> list[RecognizerResult]:
+    """Keep the highest-confidence span per source, preferring regex matches
+    over GLiNER matches whenever they overlap."""
 
-        kept: list[RecognizerResult] = []
-        for result in by_confidence:
-            overlaps = any(result.start < k.end and k.start < result.end for k in kept)
-            if not overlaps:
-                kept.append(result)
+    def by_confidence(results: list[RecognizerResult]) -> list[RecognizerResult]:
+      return sorted(results, key=lambda r: (r.score, r.end - r.start), reverse=True)
 
-        return sorted(kept, key=lambda r: r.start)
+    kept: list[RecognizerResult] = []
+    for result in by_confidence(pattern_results) + by_confidence(gliner_results):
+      overlaps = any(result.start < k.end and k.start < result.end for k in kept)
+      if not overlaps:
+        kept.append(result)
 
-    def detect(self, text: str) -> PIIMatches:
-        """Detect PII in text, grouped by entity type."""
-        return self._group(text, self._analyze(text))
+    return sorted(kept, key=lambda r: r.start)
 
-    def mask(self, text: str) -> str:
-        """Mask PII in text."""
-        return self._redact(text, self._analyze(text))
+  def detect(self, text: str) -> PIIMatches:
+    """Detect PII in text, grouped by entity type."""
+    return self._group(text, self._analyze(text))
 
-    def scan(self, text: str) -> ScanResult:
-        """Detect and mask PII in a single analysis pass."""
-        results = self._analyze(text)
-        return ScanResult(
-            pii_found=self._group(text, results), cleaned=self._redact(text, results)
-        )
+  def mask(self, text: str) -> str:
+    """Mask PII in text."""
+    return self._redact(text, self._analyze(text))
 
-    @staticmethod
-    def _group(text: str, results: list[RecognizerResult]) -> PIIMatches:
-        found: PIIMatches = {}
-        for result in results:
-            found.setdefault(result.entity_type, []).append(
-                text[result.start : result.end]
-            )
+  def scan(self, text: str) -> ScanResult:
+    """Detect and mask PII in a single analysis pass."""
+    results = self._analyze(text)
+    return ScanResult(
+      pii_found=self._group(text, results), cleaned=self._redact(text, results)
+    )
 
-        return found
+  @staticmethod
+  def _group(text: str, results: list[RecognizerResult]) -> PIIMatches:
+    found: PIIMatches = {}
+    for result in results:
+      found.setdefault(result.entity_type, []).append(text[result.start : result.end])
 
-    def _redact(self, text: str, results: list[RecognizerResult]) -> str:
-        operators = {
-            result.entity_type: OperatorConfig(
-                'replace', {'new_value': f'[{result.entity_type} REDACTED]'}
-            )
-            for result in results
-        }
+    return found
 
-        return self.anonymizer.anonymize(
-            text=text,
-            analyzer_results=cast(list[AnonymizerRecognizerResult], results),
-            operators=operators,
-        ).text
+  def _redact(self, text: str, results: list[RecognizerResult]) -> str:
+    operators = {
+      result.entity_type: OperatorConfig(
+        'replace', {'new_value': f'[{result.entity_type} REDACTED]'}
+      )
+      for result in results
+    }
+
+    return self.anonymizer.anonymize(
+      text=text,
+      analyzer_results=cast(list[AnonymizerRecognizerResult], results),
+      operators=operators,
+    ).text
