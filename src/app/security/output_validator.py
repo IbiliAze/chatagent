@@ -1,7 +1,14 @@
 import re
-from typing import Optional
+from dataclasses import dataclass
 
-from app.security.pii_detector import PIIDetector
+from app.security.pii_detector.pii_detector import PIIDetector
+
+
+@dataclass(frozen=True)
+class ValidationResult:
+    is_valid: bool
+    output: str
+    reason: str | None = None
 
 
 class OutputValidator:
@@ -27,19 +34,25 @@ class OutputValidator:
     def __init__(self) -> None:
         self.pii_detector = PIIDetector()
 
-    def validate(self, output: str) -> tuple[bool, str, Optional[str]]:
+    def validate(self, output: str) -> ValidationResult:
         """Validates output"""
-        pii_found = self.pii_detector.detect(output)
-        if pii_found:
-            cleaned = self.pii_detector.mask(output)
-            return False, cleaned, f'PII detected and masked {list(pii_found.keys())}'
+        result = self.pii_detector.scan(output)
+        if result.pii_found:
+            return ValidationResult(
+                is_valid=False,
+                output=result.cleaned,
+                reason=f'PII detected and masked: {list(result.pii_found.keys())}',
+            )
 
         for pattern in self.HARMFUL_PATTERNS:
             if pattern.search(output):
-                return (
-                    False,
-                    '[CONTENT BLOCKED]',
-                    'Potentially harmful content detected',
+                return ValidationResult(
+                    is_valid=False,
+                    output='[CONTENT BLOCKED]',
+                    reason='Potentially harmful content detected',
                 )
 
-        return True, output, None
+        return ValidationResult(
+            is_valid=True,
+            output=output,
+        )

@@ -45,11 +45,11 @@ class TestSecurityGuardIntegration:
     ) -> None:
         response = security_guard.security_check(test_case['input'])
 
-        assert response['safe'] is False
-        reason = response['reason'].lower()
+        assert response.safe is False
+        reason = response.reason.lower()
         assert any(keyword in reason for keyword in test_case['expected_contains'])
 
     def test_passes_safe_input(self, security_guard: SecurityGuard) -> None:
         response = security_guard.security_check('what is the capital of france?')
 
-        assert response['safe'] is True
+        assert response.safe is True

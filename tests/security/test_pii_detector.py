@@ -1,6 +1,5 @@
 import pytest
-
-from app.security.pii_detector import PIIDetector
+from app.security.pii_detector.pii_detector import PIIDetector
 
 
 @pytest.fixture

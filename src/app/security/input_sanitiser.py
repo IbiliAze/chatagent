@@ -1,5 +1,11 @@
 import re
-from typing import Optional
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class IsSuspiciousResult:
+    is_suspicious: bool
+    reason: str | None
 
 
 class InputSanitiser:
@@ -36,12 +42,15 @@ class InputSanitiser:
         re.compile(r'do\s+anything\s+now', re.IGNORECASE),
     ]
 
-    def is_suspicious(self, text: str) -> tuple[bool, Optional[str]]:
+    def is_suspicious(self, text: str) -> IsSuspiciousResult:
         """Check if input contains suspicious patterns"""
         for pattern in self.INJECTION_PATTERNS:
             if pattern.search(text):
-                return True, f'Suspicious pattern detected: {pattern.pattern}'
-        return False, None
+                return IsSuspiciousResult(
+                    is_suspicious=True,
+                    reason=f'Suspicious pattern detected: {pattern.pattern}',
+                )
+        return IsSuspiciousResult(is_suspicious=False, reason=None)
 
     def sanitise(self, text: str) -> str:
         """Remove potential dangerous content"""

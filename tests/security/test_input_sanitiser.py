@@ -33,18 +33,16 @@ class TestIsSuspicious:
     def test_flags_known_injection_patterns(
         self, sanitiser: InputSanitiser, text: str
     ) -> None:
-        is_suspicious, reason = sanitiser.is_suspicious(text)
+        result = sanitiser.is_suspicious(text)
 
-        assert is_suspicious is True
-        assert reason is not None
+        assert result.is_suspicious is True
+        assert result.reason is not None
 
     def test_benign_text_is_not_suspicious(self, sanitiser: InputSanitiser) -> None:
-        is_suspicious, reason = sanitiser.is_suspicious(
-            'what is the weather like today?'
-        )
+        result = sanitiser.is_suspicious('what is the weather like today?')
 
-        assert is_suspicious is False
-        assert reason is None
+        assert result.is_suspicious is False
+        assert result.reason is None
 
 
 class TestSanitise:

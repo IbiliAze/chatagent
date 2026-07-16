@@ -19,11 +19,11 @@ class TestInvalidOutput:
     def test_harmful_patterns(
         self, output_validator: OutputValidator, text: str
     ) -> None:
-        is_valid, output, reason = output_validator.validate(text)
+        result = output_validator.validate(text)
 
-        assert is_valid is False
-        assert output == '[CONTENT BLOCKED]'
-        assert reason is not None
+        assert result.is_valid is False
+        assert result.output == '[CONTENT BLOCKED]'
+        assert result.reason is not None
 
     @pytest.mark.parametrize(
         'text',
@@ -34,8 +34,8 @@ class TestInvalidOutput:
     def test_pii_detection_patterns(
         self, output_validator: OutputValidator, text: str
     ) -> None:
-        is_valid, output, reason = output_validator.validate(text)
+        result = output_validator.validate(text)
 
-        assert is_valid is False
-        assert output is not None
-        assert reason is not None
+        assert result.is_valid is False
+        assert result.output is not None
+        assert result.reason is not None

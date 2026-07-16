@@ -37,8 +37,8 @@ class TestSecurityGuardCheck:
 
         result = security_guard.security_check(text)
 
-        assert result['safe'] is False
-        assert result['reason'] is not None
+        assert result.safe is False
+        assert result.reason is not None
 
     def test_passes_safe_input(
         self, security_guard: SecurityGuard, mock_llm: Mock
@@ -48,7 +48,7 @@ class TestSecurityGuardCheck:
 
         result = security_guard.security_check('what is the weather today?')
 
-        assert result['safe'] is True
+        assert result.safe is True
 
     def test_non_json_response_fails_closed(
         self, security_guard: SecurityGuard, mock_llm: Mock
@@ -58,7 +58,7 @@ class TestSecurityGuardCheck:
 
         result = security_guard.security_check('anything')
 
-        assert result['safe'] is False
+        assert result.safe is False
 
     def test_empty_input_fails_closed(
         self, security_guard: SecurityGuard, mock_llm: Mock
@@ -68,4 +68,4 @@ class TestSecurityGuardCheck:
 
         result = security_guard.security_check('anything')
 
-        assert result['safe'] is False
+        assert result.safe is False

@@ -1,5 +1,5 @@
 import json
-from typing import TypedDict
+from dataclasses import dataclass
 
 from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
@@ -9,7 +9,8 @@ from langsmith import traceable  # pyright: ignore[reportUnknownVariableType]
 load_dotenv()
 
 
-class SecurityCheckResult(TypedDict):
+@dataclass(frozen=True)
+class SecurityCheckResult:
     safe: bool
     reason: str
 
@@ -45,9 +46,14 @@ class SecurityGuard:
         print(response.content)
 
         if not isinstance(response.content, str):
-            return {'safe': False, 'reason': 'Failed to parse security check'}
+            return SecurityCheckResult(
+                safe=False, reason='Failed to parse security check'
+            )
 
         try:
-            return json.loads(response.content)
+            content = json.loads(response.content)
+            return SecurityCheckResult(safe=content['safe'], reason=content['reason'])
         except json.JSONDecodeError:
-            return {'safe': False, 'reason': 'Failed to parse security check'}
+            return SecurityCheckResult(
+                safe=False, reason='Failed to parse security check'
+            )
