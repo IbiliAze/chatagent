@@ -2,7 +2,7 @@ from collections.abc import Callable
 from time import time
 from typing import Any, Literal, ParamSpec, TypeVar
 
-type State = Literal['closed'] | Literal['open'] | Literal['half-open']
+type State = Literal['closed', 'open', 'half-open']
 
 P = ParamSpec('P')
 T = TypeVar('T')
