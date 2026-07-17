@@ -2,6 +2,8 @@ import pytest
 
 from app.security.input_sanitiser import InputSanitiser
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture
 def sanitiser() -> InputSanitiser:

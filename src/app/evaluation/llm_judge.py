@@ -1,12 +1,14 @@
 import json
-from typing import Optional, TypedDict
+from dataclasses import dataclass
+from typing import Optional
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langsmith import traceable  # pyright: ignore[reportUnknownVariableType]
 
 
-class LLMJudgeResponse(TypedDict):
+@dataclass(frozen=True)
+class LLMJudgeResponse:
   correctness: int
   relevance: int
   clarity: int
@@ -54,24 +56,31 @@ Respond with ONLY this JSON object structure:
     )
 
     if not isinstance(response_obj.content, str):
-      return {
-        'error': 'Failed to parse LLM response',
-        'clarity': 0,
-        'completeness': 0,
-        'correctness': 0,
-        'overall': 0,
-        'relevance': 0,
-      }
+      return LLMJudgeResponse(
+        error='Failed to parse LLM response',
+        clarity=0,
+        completeness=0,
+        correctness=0,
+        overall=0,
+        relevance=0,
+      )
 
     try:
       scores = json.loads(response_obj.content)
-      return scores
+      return LLMJudgeResponse(
+        error=None,
+        clarity=scores['clarity'],
+        completeness=scores['completeness'],
+        correctness=scores['correctness'],
+        overall=scores['overall'],
+        relevance=scores['relevance'],
+      )
     except json.JSONDecodeError:
-      return {
-        'error': 'Failed to parse LLM response',
-        'clarity': 0,
-        'completeness': 0,
-        'correctness': 0,
-        'overall': 0,
-        'relevance': 0,
-      }
+      return LLMJudgeResponse(
+        error='Failed to parse LLM response',
+        clarity=0,
+        completeness=0,
+        correctness=0,
+        overall=0,
+        relevance=0,
+      )

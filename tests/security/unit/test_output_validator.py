@@ -2,6 +2,8 @@ import pytest
 
 from app.security.output_validator import OutputValidator
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.fixture
 def output_validator() -> OutputValidator:
