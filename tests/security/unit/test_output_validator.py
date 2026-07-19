@@ -1,6 +1,6 @@
 import pytest
 
-from app.security.output_validator import OutputValidator
+from security.output_validator import OutputValidator
 
 pytestmark = pytest.mark.unit
 

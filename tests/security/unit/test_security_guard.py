@@ -4,7 +4,7 @@ import pytest
 from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 
-from app.security.security_guard import SecurityGuard
+from security.security_guard import SecurityGuard
 
 pytestmark = pytest.mark.unit
 

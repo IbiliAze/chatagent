@@ -9,8 +9,8 @@ from presidio_anonymizer.entities.engine.recognizer_result import (
   RecognizerResult as AnonymizerRecognizerResult,
 )
 
-from app.security.pii_detector.entity_recogniser import GLiNERRecognizer
-from app.security.pii_detector.pattern_recogniser import PatternRecogniser
+from security.pii_detector.entity_recogniser import GLiNERRecognizer
+from security.pii_detector.pattern_recogniser import PatternRecogniser
 
 type EntityType = str
 type Matches = list[str]

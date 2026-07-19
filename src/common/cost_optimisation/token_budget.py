@@ -2,7 +2,8 @@ from dataclasses import dataclass
 
 import tiktoken
 
-from core.config.constants import TOKEN_BUDGET, AvailableModels
+from core.config.settings import Settings
+from core.config.types import AvailableModels
 
 
 @dataclass(frozen=True)
@@ -19,7 +20,7 @@ class GetStatsResponse:
 
 
 class TokenBudget:
-  def __init__(self, max_tokens_per_request: int = TOKEN_BUDGET) -> None:
+  def __init__(self, max_tokens_per_request: int = Settings.token_budget) -> None:
     self.max_tokens_per_request = max_tokens_per_request
     self.usage = {
       'total_input': 0,
@@ -32,7 +33,7 @@ class TokenBudget:
     encoding = tiktoken.encoding_for_model(model)
     return len(encoding.encode(text))
 
-  def check_budget(self, text: str, model: AvailableModels):
+  def check_budget(self, text: str, model: AvailableModels) -> CheckBudgetResponse:
     """Check if request is within budget"""
     tokens = self.estimate_tokens(text, model)
     return CheckBudgetResponse(

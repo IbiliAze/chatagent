@@ -1,6 +1,6 @@
 import pytest
 
-from app.security.pii_detector.pii_detector import PIIDetector
+from security.pii_detector.pii_detector import PIIDetector
 
 pytestmark = pytest.mark.unit
 

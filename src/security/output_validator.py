@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 
-from app.security.pii_detector.pii_detector import PIIDetector
+from security.pii_detector.pii_detector import PIIDetector
 
 
 @dataclass(frozen=True)
