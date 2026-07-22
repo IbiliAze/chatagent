@@ -1,8 +1,8 @@
 from langchain_core.messages import AnyMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
-from agents.researcher.prompts import SYSTEM_PROMPT
-from agents.researcher.state import ResearcherState
+from app.agents.researcher.prompts import SYSTEM_PROMPT
+from app.agents.researcher.state import ResearcherState
 
 
 def research(state: ResearcherState) -> dict[str, list[AnyMessage]]:

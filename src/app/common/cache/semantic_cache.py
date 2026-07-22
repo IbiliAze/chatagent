@@ -1,5 +1,4 @@
 import hashlib
-from abc import abstractmethod
 from dataclasses import dataclass
 from typing import TypedDict
 
@@ -28,9 +27,8 @@ class SemanticCache:
     self.embedder = ChatOpenAI(model='gpt-4o-mini')
 
   @staticmethod
-  @abstractmethod
   def _embed_query(query: str) -> str | None:
-    pass
+    raise NotImplementedError
 
   @staticmethod
   def _hash_query(query: str) -> str:

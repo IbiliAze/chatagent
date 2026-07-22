@@ -1,6 +1,19 @@
 from datetime import datetime, timezone
 
+from fastapi import FastAPI, HTTPException, Request
+from langsmith import traceable
 from pydantic import BaseModel, Field
+
+from api.main import app, limiter
+from core.config.settings import get_settings
+
+
+class ErrorResponse(BaseModel):
+  """Standard error response"""
+
+  error: str
+  detail: str | None = None
+  request_id: str | None = None
 
 
 class ChatRequest(BaseModel):
@@ -24,30 +37,16 @@ class ChatResponse(BaseModel):
   timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
-class HealthResponse(BaseModel):
-  """Health check response"""
-
-  status: str = 'healthy'
-  environment: str
-  version: str = '1.0.0'
-  checks: dict[str, str] = {}
+settings = get_settings()
 
 
-class MetricsResponse(BaseModel):
-  """Metrics endpoint response"""
+@app.post('/chat', response_model=ChatResponse)
+@limiter.limit(settings.rate_limit)
+@traceable
+async def chat(request: Request, body: ChatRequest):
+  """Main chat endpoint"""
 
-  total_requests: int
-  total_errors: int
-  error_state: str
-  avg_latency_ms: float
-  cache_hit_rate: int
-  total_input_tokens: int
-  total_output_tokens: int
+  with RequestTimer() as timer:
+    security_notes = []
 
-
-class ErrorResponse(BaseModel):
-  """Standard error response"""
-
-  error: str
-  detail: str | None = None
-  request_id: str | None = None
+  return ChatResponse(cached)

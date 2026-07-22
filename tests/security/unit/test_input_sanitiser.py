@@ -1,6 +1,6 @@
 import pytest
 
-from security.input_sanitiser import InputSanitiser
+from app.security.input_sanitiser import InputSanitiser
 
 pytestmark = pytest.mark.unit
 

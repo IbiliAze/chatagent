@@ -21,7 +21,7 @@ class Settings(BaseSettings):
   log_level: str
   rate_limit: str
   cache_ttl_seconds: int
-  max_retries: int
+  max_retries: int = 0
   token_budget: int = 4000
 
   model_config = {'env_file': '.env', 'extra': 'ignore'}

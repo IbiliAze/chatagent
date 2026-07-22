@@ -4,7 +4,7 @@ from typing import TypedDict
 import pytest
 from langchain_openai import ChatOpenAI
 
-from security.security_guard import SecurityGuard
+from app.security.security_guard import SecurityGuard
 
 pytestmark = [
   pytest.mark.integration,

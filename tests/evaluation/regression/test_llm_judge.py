@@ -3,7 +3,7 @@ import os
 import pytest
 from langchain_openai import ChatOpenAI
 
-from common.evaluation.llm_judge import LLMJudge
+from app.common.evaluation.llm_judge import LLMJudge
 from tests.evaluation.regression.cases import (
   JUDGE_CASES,
   JudgeRegressionCase,
