@@ -45,7 +45,7 @@ class ResearcherAgent:
   def process_message(
     self, input: ResearcherState, config: ThreadConfig
   ) -> dict[str, Any] | Any:
-    """Process a message with"""
+    """Process a message."""
     result = self.graph.invoke(input, config=config)  # pyright: ignore[reportUnknownMemberType]
     return result
 

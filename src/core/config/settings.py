@@ -10,11 +10,18 @@ class Settings(BaseSettings):
   openai_api_key: str
   primary_model: AvailableModels = 'gpt-4o'
   fallback_model: AvailableModels = 'gpt-4o-mini'
+  embedding_model: AvailableModels = 'text-embedding-3-small'
 
   # LangSmith
   langchain_tracing_v2: bool = True
   langchain_api_key: str = ''
   langchain_project: str = ''
+
+  # OpenSearch
+  opensearch_url: str = 'http://localhost:9200'
+  opensearch_index: str = 'chatagent_documents'
+  opensearch_user: str = ''
+  opensearch_password: str = ''
 
   # Application
   app_env: str
