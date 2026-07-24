@@ -81,9 +81,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
   )
   agent.process_message(
     {
-      'messages': [
-        HumanMessage('What do you know about tradeops or eight mile services?')
-      ],
+      'messages': [HumanMessage('What do you know about tradeops or blue svs LTD?')],
       'error': '',
       'model_used': '',
       'retry_count': 0,

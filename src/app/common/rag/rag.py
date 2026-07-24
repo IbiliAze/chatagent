@@ -4,6 +4,7 @@ from langchain_community.vectorstores import OpenSearchVectorSearch
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from opensearchpy.exceptions import OpenSearchException
 
 from core.config.settings import get_settings
 from core.logging.logger import logger
@@ -55,9 +56,14 @@ class Rag:
     )
     return response['count']
 
-  def ask(self, query: str) -> list[Document]:
-    retriever = self._build_retriever()
-    return retriever.invoke(query)
+  def ask(self, query: str) -> str:
+    try:
+      retriever = self._build_retriever()
+      documents = retriever.invoke(query)
+    except OpenSearchException:
+      logger.exception(f'RAG retrieval failed for query {query!r}')
+      return 'Document search is temporarily unavailable.'
+    return self._format_docs_for_context(documents)
 
   def _build_retriever(self) -> VectorStoreRetriever:
     """Build a similarity retriever"""
