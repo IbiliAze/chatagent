@@ -1,5 +1,6 @@
 import tempfile
 
+from langchain_community.vectorstores import OpenSearchVectorSearch
 from langchain_core.messages import HumanMessage
 
 # from langgraph.checkpoint.memory import MemorySaver
@@ -7,7 +8,24 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 
 from app.agents.researcher.agent import ResearcherAgent, ThreadConfig
 from app.agents.researcher.nodes import ResearcherNodes
+from app.common.models import models
 from app.common.models.models import Models
+from core.config.settings import get_settings
+
+settings = get_settings()
+models_to_use = Models()
+embedding_llm = models_to_use.embedding_llm
+vectorstore = OpenSearchVectorSearch(
+  opensearch_url=settings.opensearch_url,
+  index_name=settings.opensearch_documents_index,
+  embedding_function=embedding_llm,
+  http_auth=(
+    (settings.opensearch_user, settings.opensearch_password)
+    if settings.opensearch_user
+    else None
+  ),
+)
+
 
 with tempfile.NamedTemporaryFile(suffix='.db', delete=True) as f:
   db_path = f.name

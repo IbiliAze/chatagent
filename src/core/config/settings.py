@@ -19,7 +19,8 @@ class Settings(BaseSettings):
 
   # OpenSearch
   opensearch_url: str = 'http://localhost:9200'
-  opensearch_index: str = 'chatagent_documents'
+  opensearch_documents_index: str = 'chatagent_documents'
+  opensearch_cache_index: str = 'chatagent_cache'
   opensearch_user: str = ''
   opensearch_password: str = ''
 
