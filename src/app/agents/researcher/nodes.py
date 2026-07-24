@@ -58,7 +58,11 @@ class ResearcherNodes:
       'context_summary': decision.context,
       'handoff_reason': decision.reason,
       'current_agent': decision.handoff_to,
-      'messages': [AIMessage(f'[ TRIAGE ] Transferring to {decision.handoff_to}')],
+      'messages': [
+        AIMessage(
+          f'[ TRIAGE ] Transferring to {decision.handoff_to}. {decision.reason}'
+        )
+      ],
     }
 
   def sales_agent(self, state: ResearcherState) -> SpecialistUpdate:
