@@ -13,6 +13,7 @@ from langgraph.graph.state import (  # pyright: ignore[reportMissingTypeStubs]
 )
 
 from app.agents.researcher.nodes import ResearcherNodes
+from app.agents.researcher.routes import ResearcherRoutes
 from app.agents.researcher.state import ResearcherState
 from core.config.settings import get_settings
 
@@ -21,15 +22,16 @@ class ResearcherAgent:
   def __init__(
     self,
     nodes: ResearcherNodes,
+    routes: ResearcherRoutes,
     saver: MemorySaver | SqliteSaver,
   ) -> None:
     self.settings = get_settings()
     self.max_retries = self.settings.max_retries
-    self.graph = self._build_graph(nodes, saver)
+    self.graph = self._build_graph(nodes, routes, saver)
 
   @staticmethod
   def _build_graph(
-    nodes: ResearcherNodes, saver: MemorySaver | SqliteSaver
+    nodes: ResearcherNodes, routes: ResearcherRoutes, saver: MemorySaver | SqliteSaver
   ) -> CompiledStateGraph[ResearcherState]:
     """Construct and compile the researcher graph."""
     graph = StateGraph(ResearcherState)
@@ -43,21 +45,23 @@ class ResearcherAgent:
     graph.add_edge(START, 'triage')
     graph.add_conditional_edges(
       'triage',
-      nodes.route_from_triage,
+      routes.route_from_triage,
       {'sales': 'sales', 'billing': 'billing', 'support': 'support', 'end': END},
     )
     graph.add_conditional_edges(
-      'billing', nodes.should_continue, {'tools': 'tools', 'end': END}
+      'billing', routes.should_continue, {'tools': 'tools', 'end': END}
     )
     graph.add_conditional_edges(
-      'support', nodes.should_continue, {'tools': 'tools', 'end': END}
+      'support', routes.should_continue, {'tools': 'tools', 'end': END}
     )
     graph.add_conditional_edges(
-      'sales', nodes.should_continue, {'tools': 'tools', 'end': END}
+      'sales', routes.should_continue, {'tools': 'tools', 'end': END}
     )
-    graph.add_edge('tools', 'sales')
-    graph.add_edge('tools', 'billing')
-    graph.add_edge('tools', 'support')
+    graph.add_conditional_edges(
+      'tools',
+      routes.route_from_tools,
+      {'sales': 'sales', 'billing': 'billing', 'support': 'support'},
+    )
     return graph.compile(checkpointer=saver)  # pyright: ignore[reportUnknownMemberType]
 
   def process_message(

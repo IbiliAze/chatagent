@@ -1,4 +1,4 @@
-from typing import Literal, cast
+from typing import cast
 
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
@@ -11,7 +11,7 @@ from app.agents.researcher.prompts import (
   SUPPORT_AGENT_PROMPT,
   TRIAGE_AGENT_PROMPT,
 )
-from app.agents.researcher.schemas import HandoffDecision, ResearcherAgent
+from app.agents.researcher.schemas import HandoffDecision
 from app.agents.researcher.state import (
   ResearcherState,
   SpecialistUpdate,
@@ -24,6 +24,7 @@ load_dotenv()
 
 class ResearcherNodes:
   def __init__(self, models: Models, tools: list[BaseTool]) -> None:
+    self.primary_llm = models.primary_llm
     self.llm_with_tools = models.primary_llm.bind_tools(tools)  # pyright: ignore[reportUnknownMemberType]
     self.triage_llm = models.primary_llm.with_structured_output(HandoffDecision)  # pyright: ignore[reportUnknownMemberType]
     self.tool_node = ToolNode(tools)
@@ -40,7 +41,7 @@ class ResearcherNodes:
     )
 
     if decision.handoff_to == 'end':
-      response = self.llm_with_tools.invoke(
+      response = self.primary_llm.invoke(
         [
           SystemMessage(content='Provide a brief, helpful message to customer.'),
           *state['messages'],
@@ -70,9 +71,10 @@ class ResearcherNodes:
       ]
     )
 
+    response.content = f'[ SALES ] {response.content}'
     return {
-      'current_agent': 'end',
-      'messages': [AIMessage(content=f'[ SALES ] {response.content}')],
+      'current_agent': 'sales',
+      'messages': [response],
     }
 
   def support_agent(self, state: ResearcherState) -> SpecialistUpdate:
@@ -87,9 +89,10 @@ class ResearcherNodes:
       ]
     )
 
+    response.content = f'[ SUPPORT ] {response.content}'
     return {
-      'current_agent': 'end',
-      'messages': [AIMessage(content=f'[ SUPPORT ] {response.content}')],
+      'current_agent': 'support',
+      'messages': [response],
     }
 
   def billing_agent(self, state: ResearcherState) -> SpecialistUpdate:
@@ -104,23 +107,8 @@ class ResearcherNodes:
       ]
     )
 
+    response.content = f'[ BILLING ] {response.content}'
     return {
-      'current_agent': 'end',
-      'messages': [AIMessage(content=f'[ BILLING ] {response.content}')],
+      'current_agent': 'billing',
+      'messages': [response],
     }
-
-  def route_from_triage(self, state: ResearcherState) -> ResearcherAgent:
-    agent = state['current_agent']
-    routable_agents: list[ResearcherAgent] = ['billing', 'sales', 'support']
-    if agent in routable_agents:
-      return agent
-
-    return 'end'
-
-  def should_continue(self, state: ResearcherState) -> Literal['tools', 'end']:
-    """Check if should continue to tools or end."""
-    last_message = state['messages'][-1]
-
-    if isinstance(last_message, AIMessage) and last_message.tool_calls:
-      return 'tools'
-    return 'end'

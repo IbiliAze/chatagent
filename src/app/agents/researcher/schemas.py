@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-type ResearcherAgent = Literal['triage', 'sales', 'billing', 'support', 'stay', 'end']
+type ResearcherAgent = Literal['sales', 'billing', 'support', 'end']
 
 
 class HandoffDecision(BaseModel):

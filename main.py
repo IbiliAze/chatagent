@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from langchain_community.vectorstores import OpenSearchVectorSearch
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
@@ -7,6 +9,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 
 from app.agents.researcher.agent import ResearcherAgent
 from app.agents.researcher.nodes import ResearcherNodes
+from app.agents.researcher.routes import ResearcherRoutes
 from app.agents.researcher.tools import ResearcherTools
 from app.common.models.models import Models
 from app.common.rag.rag import Rag
@@ -47,9 +50,10 @@ with SqliteSaver.from_conn_string(db_path) as saver:
   tools = ResearcherTools(rag=rag)
   tool_list = [tools.get_relevant_documents]
   nodes = ResearcherNodes(models=models, tools=tool_list)
-  agent = ResearcherAgent(nodes=nodes, saver=saver)
+  routes = ResearcherRoutes()
+  agent = ResearcherAgent(nodes=nodes, routes=routes, saver=saver)
   agent.get_graph_png()
-  config: RunnableConfig = {'configurable': {'thread_id': '123'}}
+  config: RunnableConfig = {'configurable': {'thread_id': str(uuid4())}}
 
   agent.get_graph_png()
   agent.process_message(
@@ -59,7 +63,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
       'model_used': '',
       'retry_count': 0,
       'context_summary': '',
-      'current_agent': 'triage',
+      'current_agent': None,
       'handoff_reason': '',
     },
     config=config,
@@ -71,7 +75,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
       'model_used': '',
       'retry_count': 0,
       'context_summary': '',
-      'current_agent': 'triage',
+      'current_agent': None,
       'handoff_reason': '',
     },
     config=config,
@@ -83,7 +87,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
       'model_used': '',
       'retry_count': 0,
       'context_summary': '',
-      'current_agent': 'triage',
+      'current_agent': None,
       'handoff_reason': '',
     },
     config=config,
@@ -95,7 +99,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
       'model_used': '',
       'retry_count': 0,
       'context_summary': '',
-      'current_agent': 'triage',
+      'current_agent': None,
       'handoff_reason': '',
     },
     config=config,
@@ -107,7 +111,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
       'model_used': '',
       'retry_count': 0,
       'context_summary': '',
-      'current_agent': 'triage',
+      'current_agent': None,
       'handoff_reason': '',
     },
     config=config,

@@ -10,7 +10,7 @@ class ResearcherState(TypedDict):
   """State passed between nodes in the researcher graph."""
 
   messages: Annotated[list[BaseMessage], add_messages]
-  current_agent: ResearcherAgent
+  current_agent: ResearcherAgent | None
   handoff_reason: str
   context_summary: str
   error: str | None
