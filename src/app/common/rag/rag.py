@@ -1,10 +1,8 @@
 from datetime import datetime
 
-from langchain_community.vectorstores import (
-  OpenSearchVectorSearch,
-  VectorStoreRetriever,
-)
+from langchain_community.vectorstores import OpenSearchVectorSearch
 from langchain_core.documents import Document
+from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from core.config.settings import get_settings
@@ -57,8 +55,9 @@ class Rag:
     )
     return response['count']
 
-  def retrieve(self, text: str):
-    """Retrieve text from vector store."""
+  def ask(self, query: str) -> list[Document]:
+    retriever = self._build_retriever()
+    return retriever.invoke(query)
 
   def _build_retriever(self) -> VectorStoreRetriever:
     """Build a similarity retriever"""

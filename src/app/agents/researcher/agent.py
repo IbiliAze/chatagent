@@ -29,14 +29,17 @@ class ResearcherAgent:
 
   @staticmethod
   def _build_graph(
-    nodes: ResearcherNodes,
-    saver: MemorySaver | SqliteSaver,
+    nodes: ResearcherNodes, saver: MemorySaver | SqliteSaver
   ) -> CompiledStateGraph[ResearcherState]:
     """Construct and compile the researcher graph."""
     graph = StateGraph(ResearcherState)
     graph.add_node('research', nodes.research)  # pyright: ignore[reportUnknownMemberType]
+    graph.add_node('tools', nodes.tool_node)  # pyright: ignore[reportUnknownMemberType]
     graph.add_edge(START, 'research')
-    graph.add_edge('research', END)
+    graph.add_conditional_edges(
+      'research', nodes.should_continue, {'tools': 'tools', 'end': END}
+    )
+    graph.add_edge('tools', 'research')
     return graph.compile(checkpointer=saver)  # pyright: ignore[reportUnknownMemberType]
 
   def process_message(
