@@ -33,13 +33,31 @@ class ResearcherAgent:
   ) -> CompiledStateGraph[ResearcherState]:
     """Construct and compile the researcher graph."""
     graph = StateGraph(ResearcherState)
-    graph.add_node('research', nodes.research)  # pyright: ignore[reportUnknownMemberType]
+
+    graph.add_node('triage', nodes.triage_agent)  # pyright: ignore[reportUnknownMemberType]
+    graph.add_node('sales', nodes.sales_agent)  # pyright: ignore[reportUnknownMemberType]
+    graph.add_node('billing', nodes.billing_agent)  # pyright: ignore[reportUnknownMemberType]
+    graph.add_node('support', nodes.support_agent)  # pyright: ignore[reportUnknownMemberType]
     graph.add_node('tools', nodes.tool_node)  # pyright: ignore[reportUnknownMemberType]
-    graph.add_edge(START, 'research')
+
+    graph.add_edge(START, 'triage')
     graph.add_conditional_edges(
-      'research', nodes.should_continue, {'tools': 'tools', 'end': END}
+      'triage',
+      nodes.route_from_triage,
+      {'sales': 'sales', 'billing': 'billing', 'support': 'support', 'end': END},
     )
-    graph.add_edge('tools', 'research')
+    graph.add_conditional_edges(
+      'billing', nodes.should_continue, {'tools': 'tools', 'end': END}
+    )
+    graph.add_conditional_edges(
+      'support', nodes.should_continue, {'tools': 'tools', 'end': END}
+    )
+    graph.add_conditional_edges(
+      'sales', nodes.should_continue, {'tools': 'tools', 'end': END}
+    )
+    graph.add_edge('tools', 'sales')
+    graph.add_edge('tools', 'billing')
+    graph.add_edge('tools', 'support')
     return graph.compile(checkpointer=saver)  # pyright: ignore[reportUnknownMemberType]
 
   def process_message(

@@ -58,15 +58,21 @@ with SqliteSaver.from_conn_string(db_path) as saver:
       'error': '',
       'model_used': '',
       'retry_count': 0,
+      'context_summary': '',
+      'current_agent': 'triage',
+      'handoff_reason': '',
     },
     config=config,
   )
   agent.process_message(
     {
-      'messages': [HumanMessage('How are you?')],
+      'messages': [HumanMessage('I need help with billing')],
       'error': '',
       'model_used': '',
       'retry_count': 0,
+      'context_summary': '',
+      'current_agent': 'triage',
+      'handoff_reason': '',
     },
     config=config,
   )
@@ -76,6 +82,9 @@ with SqliteSaver.from_conn_string(db_path) as saver:
       'error': '',
       'model_used': '',
       'retry_count': 0,
+      'context_summary': '',
+      'current_agent': 'triage',
+      'handoff_reason': '',
     },
     config=config,
   )
@@ -85,6 +94,9 @@ with SqliteSaver.from_conn_string(db_path) as saver:
       'error': '',
       'model_used': '',
       'retry_count': 0,
+      'context_summary': '',
+      'current_agent': 'triage',
+      'handoff_reason': '',
     },
     config=config,
   )
@@ -94,6 +106,9 @@ with SqliteSaver.from_conn_string(db_path) as saver:
       'error': '',
       'model_used': '',
       'retry_count': 0,
+      'context_summary': '',
+      'current_agent': 'triage',
+      'handoff_reason': '',
     },
     config=config,
   )
