@@ -1,5 +1,6 @@
-from typing import Any, Literal, TypedDict
+from typing import Any
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import (  # pyright: ignore[reportMissingTypeStubs]
@@ -14,10 +15,6 @@ from langgraph.graph.state import (  # pyright: ignore[reportMissingTypeStubs]
 from app.agents.researcher.nodes import ResearcherNodes
 from app.agents.researcher.state import ResearcherState
 from core.config.settings import get_settings
-
-
-class ThreadConfig(TypedDict):
-  configurable: dict[Literal['thread_id'], str]
 
 
 class ResearcherAgent:
@@ -43,7 +40,7 @@ class ResearcherAgent:
     return graph.compile(checkpointer=saver)  # pyright: ignore[reportUnknownMemberType]
 
   def process_message(
-    self, input: ResearcherState, config: ThreadConfig
+    self, input: ResearcherState, config: RunnableConfig
   ) -> dict[str, Any] | Any:
     """Process a message."""
     result = self.graph.invoke(input, config=config)  # pyright: ignore[reportUnknownMemberType]
@@ -55,10 +52,10 @@ class ResearcherAgent:
     with open('researcher_graph.png', 'wb') as f:
       f.write(png_bytes)
 
-  def get_current_state(self, config: ThreadConfig):
+  def get_current_state(self, config: RunnableConfig):
     """Get current LangGraph state."""
     return self.graph.get_state(config)
 
-  def get_state_history(self, config: ThreadConfig):
+  def get_state_history(self, config: RunnableConfig):
     """Get current LangGraph state."""
     return self.graph.get_state_history(config)

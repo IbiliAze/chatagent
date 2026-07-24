@@ -2,11 +2,12 @@ import tempfile
 
 from langchain_community.vectorstores import OpenSearchVectorSearch
 from langchain_core.messages import HumanMessage
+from langchain_core.runnables import RunnableConfig
 
 # from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
 
-from app.agents.researcher.agent import ResearcherAgent, ThreadConfig
+from app.agents.researcher.agent import ResearcherAgent
 from app.agents.researcher.nodes import ResearcherNodes
 from app.common.models import models
 from app.common.models.models import Models
@@ -36,7 +37,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
   nodes = ResearcherNodes(models=models)
   agent = ResearcherAgent(nodes=nodes, saver=saver)
   agent.get_graph_png()
-  config: ThreadConfig = {'configurable': {'thread_id': '123'}}
+  config: RunnableConfig = {'configurable': {'thread_id': '123'}}
 
   agent.process_message(
     {
