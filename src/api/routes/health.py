@@ -1,18 +1,6 @@
-from typing import Literal
-
-from pydantic import BaseModel
-
 from api.main import agent, app, cache, security
+from api.models.health import HealthResponse
 from core.config.settings import get_settings
-
-
-class HealthResponse(BaseModel):
-  """Health check response"""
-
-  status: Literal['healthy', 'degraded'] = 'healthy'
-  environment: str
-  version: str = '1.0.0'
-  checks: dict[str, bool] = {}
 
 
 @app.post('/health', response_model=HealthResponse)

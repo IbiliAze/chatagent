@@ -10,10 +10,15 @@ from app.agents.researcher.agent import ResearcherAgent
 from app.agents.researcher.nodes import ResearcherNodes
 from app.agents.researcher.routes import ResearcherRoutes
 from app.agents.researcher.tools import ResearcherTools
+from app.common.cache.hash_cache import HashCache
+from app.common.cache.semantic_cache import SemanticCache
 from app.common.observability.metrics_collector import MetricsCollector
 from app.common.rag.rag import Rag
-from core.cache.hash_cache import HashCache
-from core.cache.semantic_cache import SemanticCache
+from app.security.input_sanitiser import InputSanitiser
+from app.security.output_validator import OutputValidator
+from app.security.pii_detector.pii_detector import PIIDetector
+from app.security.security_guard import SecurityGuard
+from app.security.security_pipeline import SecurityPipeline
 from core.config.settings import get_settings
 from core.logging.logger import logger
 from core.models.models import Models
@@ -41,6 +46,17 @@ async def lifespan(app: FastAPI):
   )
 
   models = Models()
+
+  input_sanitiser = InputSanitiser()
+  pii_detector = PIIDetector()
+  security_guard = SecurityGuard(llm=models.primary_llm)
+  output_validator = OutputValidator(pii_detector=pii_detector)
+  security = SecurityPipeline(
+    pii_detector=pii_detector,
+    output_validator=output_validator,
+    security_guard=security_guard,
+    input_sanitiser=input_sanitiser,
+  )
   opensearch = OpenSearch()
   rag = Rag(opensearch.document_vectorstore)
 

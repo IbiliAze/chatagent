@@ -1,6 +1,6 @@
 from langchain_community.vectorstores import OpenSearchVectorSearch
 
-from core.cache.cache import Cache, CacheStats
+from app.common.cache.cache import Cache, CacheStats
 from core.config.settings import get_settings
 
 

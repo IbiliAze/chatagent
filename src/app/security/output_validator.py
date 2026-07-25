@@ -31,8 +31,8 @@ class OutputValidator:
     ),
   ]
 
-  def __init__(self) -> None:
-    self.pii_detector = PIIDetector()
+  def __init__(self, pii_detector: PIIDetector) -> None:
+    self.pii_detector = pii_detector
 
   def validate(self, output: str) -> ValidationResult:
     """Validates output"""
