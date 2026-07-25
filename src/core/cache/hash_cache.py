@@ -1,7 +1,7 @@
 import hashlib
 from typing import TypedDict
 
-from app.common.cache.cache import Cache, CacheStats
+from core.cache.cache import Cache, CacheStats
 
 
 class CacheEntry(TypedDict):

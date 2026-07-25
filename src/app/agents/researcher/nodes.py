@@ -17,7 +17,7 @@ from app.agents.researcher.state import (
   SpecialistUpdate,
   TriageUpdate,
 )
-from app.common.models.models import Models
+from core.models.models import Models
 
 load_dotenv()
 

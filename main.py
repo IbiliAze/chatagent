@@ -11,9 +11,9 @@ from app.agents.researcher.agent import ResearcherAgent
 from app.agents.researcher.nodes import ResearcherNodes
 from app.agents.researcher.routes import ResearcherRoutes
 from app.agents.researcher.tools import ResearcherTools
-from app.common.models.models import Models
 from app.common.rag.rag import Rag
 from core.config.settings import get_settings
+from core.models.models import Models
 
 settings = get_settings()
 models_to_use = Models()
