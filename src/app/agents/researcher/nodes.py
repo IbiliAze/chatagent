@@ -15,6 +15,7 @@ from app.agents.researcher.state import (
   SpecialistUpdate,
   TriageUpdate,
 )
+from core.config.types import AvailableModels
 from core.models.models import Models
 
 load_dotenv()
@@ -71,8 +72,13 @@ class ResearcherNodes:
     )
 
     response.content = f'[ SALES ] {response.content}'
+    model_used: AvailableModels = response.response_metadata.get(
+      'model_name', 'UNKNOWN MODEL'
+    )
+
     return {
       'current_agent': 'sales',
+      'model_used': model_used,
       'messages': [response],
     }
 
@@ -89,8 +95,13 @@ class ResearcherNodes:
     )
 
     response.content = f'[ SUPPORT ] {response.content}'
+    model_used: AvailableModels = response.response_metadata.get(
+      'model_name', 'UNKNOWN MODEL'
+    )
+
     return {
       'current_agent': 'support',
+      'model_used': model_used,
       'messages': [response],
     }
 
@@ -107,7 +118,12 @@ class ResearcherNodes:
     )
 
     response.content = f'[ BILLING ] {response.content}'
+    model_used: AvailableModels = response.response_metadata.get(
+      'model_name', 'UNKNOWN MODEL'
+    )
+
     return {
       'current_agent': 'billing',
+      'model_used': model_used,
       'messages': [response],
     }

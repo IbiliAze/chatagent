@@ -1,5 +1,7 @@
-from typing import Any
+from collections.abc import Iterator
+from typing import Any, cast
 
+from langchain_core.messages import BaseMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -70,6 +72,24 @@ class ResearcherAgent:
     """Process a message."""
     result = self.graph.invoke(input, config=config)  # pyright: ignore[reportUnknownMemberType]
     return result
+
+  def stream_messages(
+    self, input: ResearcherState, config: RunnableConfig
+  ) -> Iterator[tuple[str, BaseMessage]]:
+    """Yield (node, message) pairs as each node produces them.
+
+    stream_mode='updates' emits only what a node just wrote, so each message is
+    yielded once. 'values' would re-emit the whole accumulated history on every
+    step and would need diffing.
+    """
+    stream = cast(
+      Iterator[dict[str, ResearcherState]],
+      self.graph.stream(input, config=config, stream_mode='updates'),  # pyright: ignore[reportUnknownMemberType]
+    )
+    for chunk in stream:
+      for node, update in chunk.items():
+        for message in update.get('messages', []):
+          yield node, message
 
   def get_graph_png(self):
     """Get graph as PNG image."""

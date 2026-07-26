@@ -10,6 +10,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from app.agents.researcher.agent import ResearcherAgent
 from app.agents.researcher.nodes import ResearcherNodes
 from app.agents.researcher.routes import ResearcherRoutes
+from app.agents.researcher.state import ResearcherState
 from app.agents.researcher.tools import ResearcherTools
 from app.common.rag.rag import Rag
 from core.config.settings import get_settings
@@ -56,70 +57,26 @@ with SqliteSaver.from_conn_string(db_path) as saver:
   config: RunnableConfig = {'configurable': {'thread_id': str(uuid4())}}
 
   agent.get_graph_png()
-  agent.process_message(
-    {
-      'messages': [HumanMessage('Hi, my name is ibi')],
-      'error': '',
-      'model_used': '',
-      'retry_count': 0,
-      'context_summary': '',
-      'current_agent': None,
-      'handoff_reason': '',
-    },
-    config=config,
-  )
-  agent.process_message(
-    {
-      'messages': [HumanMessage('I need help with billing')],
-      'error': '',
-      'model_used': '',
-      'retry_count': 0,
-      'context_summary': '',
-      'current_agent': None,
-      'handoff_reason': '',
-    },
-    config=config,
-  )
-  agent.process_message(
-    {
-      'messages': [HumanMessage('What is the capital of Azerbaijan?')],
-      'error': '',
-      'model_used': '',
-      'retry_count': 0,
-      'context_summary': '',
-      'current_agent': None,
-      'handoff_reason': '',
-    },
-    config=config,
-  )
-  agent.process_message(
-    {
-      'messages': [HumanMessage('What do you know about tradeops or blue svs LTD?')],
-      'error': '',
-      'model_used': '',
-      'retry_count': 0,
-      'context_summary': '',
-      'current_agent': None,
-      'handoff_reason': '',
-    },
-    config=config,
-  )
-  result = agent.process_message(
-    {
-      'messages': [HumanMessage('What is my name?')],
-      'error': '',
-      'model_used': '',
-      'retry_count': 0,
-      'context_summary': '',
-      'current_agent': None,
-      'handoff_reason': '',
-    },
-    config=config,
-  )
 
-  for message in result['messages']:
-    print(message.content)
-    print()
+  def ask(question: str) -> None:
+    """Send one turn and print each message as the graph produces it."""
+    print(f'\n>>> {question}')
+    state: ResearcherState = {
+      'messages': [HumanMessage(question)],
+      'error': '',
+      'retry_count': 0,
+      'context_summary': '',
+      'current_agent': None,
+      'handoff_reason': '',
+    }
+    for node, message in agent.stream_messages(state, config=config):
+      print(f'  [{node}] {message.content}', flush=True)
+
+  ask('Hi, my name is ibi')
+  ask('I need help with billing')
+  ask('What is the capital of Azerbaijan?')
+  ask('What do you know about tradeops or blue svs LTD?')
+  ask('What is my name?')
 
   # print(agent.get_current_state(config))
   # print()
