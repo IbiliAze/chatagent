@@ -76,8 +76,9 @@ with SqliteSaver.from_conn_string(db_path) as saver:
     }
     for response in agent.stream_messages(state, config=config):
       print(
-        f'{BRIGHT_GREEN}>>> [ {response.node.upper()} ] {response.message.content}{RESET}\n'
+        f'{BRIGHT_GREEN}>>> [ {response.current_agent.upper()} ] {response.message.content}{RESET}\n'
         f'  {GRAY}• model: {response.model_used}{RESET}\n',
+        f'  {GRAY}• hand-off reason: {response.handoff_reason}{RESET}\n',
         flush=True,
       )
 

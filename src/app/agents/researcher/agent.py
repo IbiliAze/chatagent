@@ -95,9 +95,15 @@ class ResearcherAgent:
     )
     for chunk in stream:
       for node, update in chunk.items():
-        model_used: str = update.get('model_used', 'UNKNOWN MODEL')
+        model_used = update.get('model_used', 'UNKNOWN MODEL')
+        handoff_reason = update.get('handoff_reason')
         for message in update.get('messages', []):
-          yield ResearcherResponse(message=message, model_used=model_used, node=node)
+          yield ResearcherResponse(
+            message=message,
+            model_used=model_used,
+            current_agent=node,
+            handoff_reason=handoff_reason,
+          )
 
   def get_graph_png(self):
     """Get graph as PNG image."""

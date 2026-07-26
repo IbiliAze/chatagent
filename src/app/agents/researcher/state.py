@@ -40,4 +40,5 @@ class SpecialistUpdate(TypedDict):
 class ResearcherResponse:
   message: BaseMessage
   model_used: str
-  node: str
+  current_agent: str
+  handoff_reason: str | None
