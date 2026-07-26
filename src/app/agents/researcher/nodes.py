@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
 from langchain_core.tools import BaseTool
+from langfuse import observe  # pyright: ignore[reportUnknownVariableType]
 from langgraph.prebuilt.tool_node import ToolNode
 
 from app.agents.researcher.prompts import (
@@ -28,6 +29,7 @@ class ResearcherNodes:
     self.triage_llm = models.with_schema(HandoffDecision)
     self.tool_node = ToolNode(tools)
 
+  @observe(name='triage_agent')
   def triage_agent(self, state: ResearcherState) -> TriageUpdate:
     """Initial triage to route the customer query to."""
     messages: list[BaseMessage] = [
@@ -59,6 +61,7 @@ class ResearcherNodes:
       ],
     }
 
+  @observe(name='sales_agent')
   def sales_agent(self, state: ResearcherState) -> SpecialistUpdate:
     """Sales specialist."""
 
@@ -80,6 +83,7 @@ class ResearcherNodes:
       'messages': [response],
     }
 
+  @observe(name='support_agent')
   def support_agent(self, state: ResearcherState) -> SpecialistUpdate:
     """Support specialist."""
 
@@ -102,6 +106,7 @@ class ResearcherNodes:
       'messages': [response],
     }
 
+  @observe(name='billing_agent')
   def billing_agent(self, state: ResearcherState) -> SpecialistUpdate:
     """Billing specialist."""
 

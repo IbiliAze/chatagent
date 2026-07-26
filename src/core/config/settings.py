@@ -19,6 +19,12 @@ class Settings(BaseSettings):
   langchain_api_key: str = ''
   langchain_project: str = ''
 
+  # Langfuse
+  langfuse_public_key: str = ''
+  langfuse_secret_key: str = ''
+  langfuse_base_url: str = 'https://cloud.langfuse.com'
+  langfuse_tracing: bool = True
+
   # OpenSearch
   opensearch_url: str = 'http://localhost:9200'
   opensearch_documents_index: str = 'chatagent_documents'
