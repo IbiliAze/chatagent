@@ -1,7 +1,7 @@
 import asyncio
 import threading
 from collections.abc import Coroutine
-from typing import Any
+from typing import Any, cast
 
 from langchain_core.tools import BaseTool, StructuredTool, ToolException
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -9,6 +9,19 @@ from langchain_mcp_adapters.sessions import StreamableHttpConnection
 
 from core.config.settings import get_settings
 from core.logging.logger import logger
+
+
+def _leaf_cause(error: BaseException) -> str:
+  """Flatten the anyio task group the transport buries real failures inside.
+
+  Without this the caller only ever sees 'unhandled errors in a TaskGroup',
+  which hides the one thing worth knowing, e.g. a 401 against a 403.
+  """
+  if isinstance(error, BaseExceptionGroup):
+    # Cast because isinstance leaves the group's type argument unknown.
+    group = cast(BaseExceptionGroup[BaseException], error)
+    return '; '.join(_leaf_cause(e) for e in group.exceptions)
+  return f'{type(error).__name__}: {error}'
 
 
 class McpClient:
@@ -78,7 +91,8 @@ class McpClient:
     except Exception as e:
       url = self.client.connections[self.name].get('url', 'unknown url')
       raise RuntimeError(
-        f'Could not read the tool list of MCP server {self.name!r} at {url}'
+        f'Could not read the tool list of MCP server {self.name!r} '
+        f'at {url} ({_leaf_cause(e)})'
       ) from e
 
   def close(self) -> None:

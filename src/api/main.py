@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
   db_path = 'checkpoints.db'
   routes = ResearcherRoutes()
   tools = ResearcherTools(rag=rag, mcp_client=mcp_client)
-  tool_list = [tools.get_relevant_documents]
+  tool_list = tools.load_tools()
   nodes = ResearcherNodes(models=models, tools=tool_list)
 
   class AvailableCache:

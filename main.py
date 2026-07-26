@@ -56,7 +56,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
   models = Models()
   mcp_client = McpClient(name='eightmile')
   tools = ResearcherTools(rag=rag, mcp_client=mcp_client)
-  tool_list = [tools.get_relevant_documents]
+  tool_list = tools.load_tools()
   nodes = ResearcherNodes(models=models, tools=tool_list)
   routes = ResearcherRoutes()
   agent = ResearcherAgent(nodes=nodes, routes=routes, saver=saver)
@@ -89,6 +89,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
   ask('What is the capital of Azerbaijan?')
   ask('What do you know about tradeops or blue svs LTD?')
   ask('What is my name?')
+  ask('what services do you provide?')
 
   # print(agent.get_current_state(config))
   # print()
