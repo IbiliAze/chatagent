@@ -14,6 +14,7 @@ from app.agents.researcher.state import ResearcherState
 from app.agents.researcher.tools import ResearcherTools
 from app.common.mcp.mcp_client import McpClient
 from app.common.rag.rag import Rag
+from app.security.language_detector import LanguageDetector
 from core.config.settings import get_settings
 from core.models.models import Models
 
@@ -21,6 +22,8 @@ DIM_GREEN = '\033[2;32m'
 BRIGHT_GREEN = '\033[92m'
 GRAY = '\033[90m'
 RESET = '\033[0m'
+DIM_RED = '\033[2;31m'
+BRIGHT_RED = '\033[91m'
 
 settings = get_settings()
 models_to_use = Models()
@@ -67,6 +70,13 @@ with SqliteSaver.from_conn_string(db_path) as saver:
 
   def ask(question: str) -> None:
     """Send one turn and print each message as the graph produces it."""
+
+    language_detector = LanguageDetector()
+    language_detector_result = language_detector.check(question)
+    if not language_detector_result.allowed:
+      print(f'{BRIGHT_RED}>>> {language_detector_result.reason}')
+      return
+
     print(f'\n{DIM_GREEN}>>> {question}{RESET}')
     state: ResearcherState = {
       'messages': [HumanMessage(question)],
@@ -90,6 +100,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
   ask('What do you know about tradeops or blue svs LTD?')
   ask('What is my name?')
   ask('what services do you provide?')
+  ask('salam, necesen?')
 
   # print(agent.get_current_state(config))
   # print()

@@ -17,6 +17,7 @@ from app.common.mcp.mcp_client import McpClient
 from app.common.observability.metrics_collector import MetricsCollector
 from app.common.rag.rag import Rag
 from app.security.input_sanitiser import InputSanitiser
+from app.security.language_detector import LanguageDetector
 from app.security.output_validator import OutputValidator
 from app.security.pii_detector.pii_detector import PIIDetector
 from app.security.security_guard import SecurityGuard
@@ -53,6 +54,7 @@ async def lifespan(app: FastAPI):
 
   input_sanitiser = InputSanitiser()
   pii_detector = PIIDetector()
+  language_detector = LanguageDetector()
   security_guard = SecurityGuard(llm=models.primary_llm)
   output_validator = OutputValidator(pii_detector=pii_detector)
   security = SecurityPipeline(
@@ -60,6 +62,7 @@ async def lifespan(app: FastAPI):
     output_validator=output_validator,
     security_guard=security_guard,
     input_sanitiser=input_sanitiser,
+    language_detector=language_detector,
   )
   opensearch = OpenSearch()
   opensearch.provision_indexes(embedding_dimension=1536)
