@@ -66,7 +66,7 @@ async def lifespan(app: FastAPI):
   routes = ResearcherRoutes()
   tools = ResearcherTools(rag=rag)
   tool_list = [tools.get_relevant_documents]
-  nodes = ResearcherNodes(tools=tool_list, models=models)
+  nodes = ResearcherNodes(models=models, tools=tool_list)
 
   class AvailableCache:
     semantic = SemanticCache(vectorstore=opensearch.cache_vectorstore)

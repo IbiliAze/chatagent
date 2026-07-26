@@ -8,8 +8,10 @@ from core.config.types import AvailableModels
 class Settings(BaseSettings):
   # LLM Configuration
   openai_api_key: str
+  anthropic_api_key: str
   primary_model: AvailableModels = 'gpt-4o'
-  fallback_model: AvailableModels = 'gpt-4o-mini'
+  fallback_model: AvailableModels = 'claude-sonnet-4-5-20250929'
+  fallback_model_2: AvailableModels = 'gpt-4o-mini'
   embedding_model: AvailableModels = 'text-embedding-3-small'
 
   # LangSmith

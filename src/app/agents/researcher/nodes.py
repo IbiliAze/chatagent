@@ -1,5 +1,3 @@
-from typing import cast
-
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
 from langchain_core.tools import BaseTool
@@ -24,9 +22,9 @@ load_dotenv()
 
 class ResearcherNodes:
   def __init__(self, models: Models, tools: list[BaseTool]) -> None:
-    self.primary_llm = models.primary_llm
-    self.llm_with_tools = models.primary_llm.bind_tools(tools)  # pyright: ignore[reportUnknownMemberType]
-    self.triage_llm = models.primary_llm.with_structured_output(HandoffDecision)  # pyright: ignore[reportUnknownMemberType]
+    self.llm = models.llm
+    self.llm_with_tools = models.with_tools(tools)
+    self.triage_llm = models.with_schema(HandoffDecision)
     self.tool_node = ToolNode(tools)
 
   def triage_agent(self, state: ResearcherState) -> TriageUpdate:
@@ -35,13 +33,10 @@ class ResearcherNodes:
       SystemMessage(content=TRIAGE_AGENT_PROMPT),
       *state['messages'],
     ]
-    decision = cast(
-      HandoffDecision,
-      self.triage_llm.invoke(messages),  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
-    )
+    decision = self.triage_llm.invoke(messages)
 
     if decision.handoff_to == 'end':
-      response = self.primary_llm.invoke(
+      response = self.llm.invoke(
         [
           SystemMessage(content='Provide a brief, helpful message to customer.'),
           *state['messages'],
