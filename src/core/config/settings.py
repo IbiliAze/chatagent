@@ -30,6 +30,14 @@ class Settings(BaseSettings):
   rate_limit: str
   cache_ttl_seconds: int
   cache_max_entries: int = 1000
+  # Raw OpenSearch kNN score, NOT a cosine similarity. The score formula depends
+  # on the index's engine and space_type, so this must be recalibrated whenever
+  # either changes. See SemanticCache.get.
+  cache_score_threshold: float = 0.95
+  # Fraction of cache_max_entries to evict down to, so that concurrent
+  # maintenance passes across workers do not thrash at the boundary.
+  cache_eviction_target_ratio: float = 0.9
+  cache_maintenance_interval_seconds: int = 60
   max_retries: int = 0
   token_budget: int = 4000
 

@@ -1,4 +1,5 @@
-from contextlib import ExitStack, asynccontextmanager
+import asyncio
+from contextlib import ExitStack, asynccontextmanager, suppress
 
 from fastapi import FastAPI, Request
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -81,11 +82,26 @@ async def lifespan(app: FastAPI):
     saver.setup()
     agent = ResearcherAgent(nodes=nodes, routes=routes, saver=saver)
 
+    maintenance = asyncio.create_task(cache.semantic.maintenance())
+
     logger.info('All components initialised')
 
-    yield
+    try:
+      yield
+    finally:
+      maintenance.cancel()
 
-    logger.info('Shutting down...', extra={'extra_data': metrics.get_summary()})
+      with suppress(asyncio.CancelledError):
+        await maintenance
+
+      # Flush here rather than from the task's cancel handler, where a second
+      # cancellation or interpreter teardown can interrupt the await.
+      try:
+        await cache.semantic.run_maintenance_once()
+      except Exception:
+        logger.exception('Final cache maintenance failed')
+
+      logger.info('Shutting down...', extra={'extra_data': metrics.get_summary()})
 
 
 limiter = Limiter(key_func=get_remote_address)

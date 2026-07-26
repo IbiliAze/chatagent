@@ -22,7 +22,7 @@ class SemanticCache(Cache):
   def __init__(
     self,
     vectorstore: OpenSearchVectorSearch,
-    similarity_threshold: float = 0.95,
+    score_threshold: float | None = None,
     ttl_seconds: int | None = None,
     max_entries: int | None = None,
   ) -> None:
@@ -33,8 +33,12 @@ class SemanticCache(Cache):
     self.max_entries = (
       max_entries if max_entries is not None else self.settings.cache_max_entries
     )
+    self.score_threshold = (
+      score_threshold
+      if score_threshold is not None
+      else self.settings.cache_score_threshold
+    )
     self.vectorstore = vectorstore
-    self.similarity_threshold = similarity_threshold
     self.increment_entries_queue: deque[str] = deque(maxlen=1000)
 
   async def get(self, query: str, thread_id: str) -> str | None:
@@ -74,7 +78,12 @@ class SemanticCache(Cache):
       return None
 
     doc, score = results[0]
-    if score < self.similarity_threshold:
+
+    # Raw OpenSearch kNN score, not a cosine similarity: the score formula
+    # depends on the index engine and space_type, so comparing it directly
+    # avoids hardcoding a conversion that silently breaks if either changes.
+    # Monotonic in cosine either way, so it is still a valid cutoff.
+    if score < self.score_threshold:
       return None
 
     if doc.id is None:
@@ -149,15 +158,25 @@ class SemanticCache(Cache):
     return int(response.get('deleted', 0)) + evicted_count
 
   def _evict_entries(self) -> int:
-    """Evict overflowed entries."""
-    response = self.vectorstore.client.count(index=self.settings.opensearch_cache_index)
+    """Evict overflowed entries, down to a target below max_entries.
+
+    Evicting to a target rather than exactly to max_entries means a cache
+    sitting at capacity does not re-trigger eviction on every pass, and lets
+    concurrent passes from other workers overlap without over-deleting.
+    """
+    index = self.settings.opensearch_cache_index
+
+    response = self.vectorstore.client.count(index=index)
     current_count = response.get('count', 0)
-    overflowed = current_count - self.max_entries
+
+    if current_count <= self.max_entries:
+      return 0
+
+    target = int(self.max_entries * self.settings.cache_eviction_target_ratio)
+    overflowed = current_count - target
 
     if overflowed <= 0:
       return 0
-
-    index = self.settings.opensearch_cache_index
 
     response = self.vectorstore.client.search(
       index=index,
@@ -196,9 +215,23 @@ class SemanticCache(Cache):
     value = f'{thread_id}:{normalized_query}'
     return sha256(value.encode()).hexdigest()
 
+  def _drain_queue(self) -> list[str]:
+    """Take every queued document id, leaving the queue empty.
+
+    Draining up front means hits recorded while the flush is in flight simply
+    land in the next batch. Reconciling against a copy afterwards would delete
+    those late arrivals too, silently losing them.
+    """
+    entries: list[str] = []
+
+    while self.increment_entries_queue:
+      entries.append(self.increment_entries_queue.popleft())
+
+    return entries
+
   def _increment_hits(self) -> None:
     """Flush pending cache-hit increments to OpenSearch."""
-    entries = self.increment_entries_queue.copy()
+    entries = self._drain_queue()
 
     if not entries:
       return
@@ -253,6 +286,11 @@ class SemanticCache(Cache):
       logger.exception('Cache entry increment failed')
       return
 
+    if not response.get('errors'):
+      return
+
+    # Hit counts are advisory, so a failed increment is logged and dropped
+    # rather than requeued.
     for item in response.get('items', []):
       update_result = item.get('update', {})
 
@@ -260,39 +298,41 @@ class SemanticCache(Cache):
         logger.warning(
           'Cache entry increment failed',
           extra={
-            'document_id': update_result.get('_id'),
-            'status': update_result.get('status'),
-            'error': error,
+            'extra_data': {
+              'document_id': update_result.get('_id'),
+              'status': update_result.get('status'),
+              'error': error,
+            }
           },
         )
 
-      else:
-        try:
-          doc_id = update_result.get('_id')
-          if doc_id is None:
-            continue
+  async def run_maintenance_once(self) -> None:
+    """Flush queued hit increments, then purge and evict.
 
-          else:
-            while doc_id in self.increment_entries_queue:
-              self.increment_entries_queue.remove(doc_id)
+    Ordering matters: eviction sorts on metadata.hits, so the increments have
+    to be flushed first or it ranks entries on stale counts.
+    """
+    await asyncio.to_thread(self._increment_hits)
+    await asyncio.to_thread(self.purge_expired)
 
-        except Exception:
-          logger.error('Failed to remove from increment queue')
+  async def maintenance(self, interval_seconds: int | None = None) -> None:
+    """Run maintenance on a fixed interval until cancelled.
 
-    return
+    Deliberately uncoordinated across workers: eviction leaves headroom below
+    max_entries, so concurrent passes overlap harmlessly rather than thrashing
+    at the boundary. The caller owns the final flush on shutdown.
+    """
+    interval = (
+      interval_seconds
+      if interval_seconds is not None
+      else self.settings.cache_maintenance_interval_seconds
+    )
 
-  async def maintenance(
-    self,
-    interval_seconds: int = 60,
-  ) -> None:
-    """Periodically flush pending hit increments and purge expired entries"""
-    try:
-      while True:
-        await asyncio.sleep(interval_seconds)
-        await asyncio.to_thread(self._increment_hits)
-        await asyncio.to_thread(self.purge_expired)
-    except asyncio.CancelledError:
-      # Final flush during application shutdown.
-      await asyncio.to_thread(self._increment_hits)
-      await asyncio.to_thread(self.purge_expired)
-      raise
+    while True:
+      await asyncio.sleep(interval)
+
+      try:
+        await self.run_maintenance_once()
+      except Exception:
+        # Never let one bad pass kill the loop.
+        logger.exception('Cache maintenance pass failed')
