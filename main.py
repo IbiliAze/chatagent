@@ -68,10 +68,11 @@ with SqliteSaver.from_conn_string(db_path) as saver:
 
   agent.get_graph_png()
 
+  language_detector = LanguageDetector()
+
   def ask(question: str) -> None:
     """Send one turn and print each message as the graph produces it."""
 
-    language_detector = LanguageDetector()
     language_detector_result = language_detector.check(question)
     if not language_detector_result.allowed:
       print(f'{BRIGHT_RED}>>> {language_detector_result.reason}')
