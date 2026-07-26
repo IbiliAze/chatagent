@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Annotated, NotRequired, TypedDict
 
 from langchain_core.messages import BaseMessage
@@ -33,3 +34,10 @@ class SpecialistUpdate(TypedDict):
   messages: Annotated[list[BaseMessage], add_messages]
   current_agent: ResearcherAgent
   model_used: AvailableModels
+
+
+@dataclass
+class ResearcherResponse:
+  message: BaseMessage
+  model_used: str
+  node: str

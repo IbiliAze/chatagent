@@ -1,7 +1,6 @@
 from collections.abc import Iterator
-from typing import Any, cast
+from typing import cast
 
-from langchain_core.messages import BaseMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -16,7 +15,7 @@ from langgraph.graph.state import (  # pyright: ignore[reportMissingTypeStubs]
 
 from app.agents.researcher.nodes import ResearcherNodes
 from app.agents.researcher.routes import ResearcherRoutes
-from app.agents.researcher.state import ResearcherState
+from app.agents.researcher.state import ResearcherResponse, ResearcherState
 from core.config.settings import get_settings
 
 
@@ -68,14 +67,22 @@ class ResearcherAgent:
 
   def process_message(
     self, input: ResearcherState, config: RunnableConfig
-  ) -> dict[str, Any] | Any:
-    """Process a message."""
-    result = self.graph.invoke(input, config=config)  # pyright: ignore[reportUnknownMemberType]
-    return result
+  ) -> ResearcherState:
+    """Process a message.
+
+    The cast is unavoidable: CompiledStateGraph is generic over its output type
+    but Pregel.invoke is annotated `dict[str, Any] | Any`, so the parameter never
+    reaches the call site. Sound only because every key the graph may leave
+    unwritten is NotRequired on ResearcherState.
+    """
+    return cast(
+      ResearcherState,
+      self.graph.invoke(input, config=config),  # pyright: ignore[reportUnknownMemberType]
+    )
 
   def stream_messages(
     self, input: ResearcherState, config: RunnableConfig
-  ) -> Iterator[tuple[str, BaseMessage]]:
+  ) -> Iterator[ResearcherResponse]:
     """Yield (node, message) pairs as each node produces them.
 
     stream_mode='updates' emits only what a node just wrote, so each message is
@@ -88,8 +95,9 @@ class ResearcherAgent:
     )
     for chunk in stream:
       for node, update in chunk.items():
+        model_used: str = update.get('model_used', 'UNKNOWN MODEL')
         for message in update.get('messages', []):
-          yield node, message
+          yield ResearcherResponse(message=message, model_used=model_used, node=node)
 
   def get_graph_png(self):
     """Get graph as PNG image."""

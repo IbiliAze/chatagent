@@ -16,6 +16,11 @@ from app.common.rag.rag import Rag
 from core.config.settings import get_settings
 from core.models.models import Models
 
+DIM_GREEN = '\033[2;32m'
+BRIGHT_GREEN = '\033[92m'
+GRAY = '\033[90m'
+RESET = '\033[0m'
+
 settings = get_settings()
 models_to_use = Models()
 embedding_llm = models_to_use.embedding_llm
@@ -60,7 +65,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
 
   def ask(question: str) -> None:
     """Send one turn and print each message as the graph produces it."""
-    print(f'\n>>> {question}')
+    print(f'\n{DIM_GREEN}>>> {question}{RESET}')
     state: ResearcherState = {
       'messages': [HumanMessage(question)],
       'error': '',
@@ -69,8 +74,12 @@ with SqliteSaver.from_conn_string(db_path) as saver:
       'current_agent': None,
       'handoff_reason': '',
     }
-    for node, message in agent.stream_messages(state, config=config):
-      print(f'  [{node}] {message.content}', flush=True)
+    for response in agent.stream_messages(state, config=config):
+      print(
+        f'{BRIGHT_GREEN}>>> [ {response.node.upper()} ] {response.message.content}{RESET}\n'
+        f'  {GRAY}• model: {response.model_used}{RESET}\n',
+        flush=True,
+      )
 
   ask('Hi, my name is ibi')
   ask('I need help with billing')

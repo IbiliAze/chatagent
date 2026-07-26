@@ -44,7 +44,7 @@ class ResearcherNodes:
         ]
       )
       return {
-        'messages': [AIMessage(content=f'[ TRIAGE ] {response.content}')],
+        'messages': [AIMessage(content=response.content)],
         'current_agent': 'end',
         'context_summary': '',
         'handoff_reason': '',
@@ -55,9 +55,7 @@ class ResearcherNodes:
       'handoff_reason': decision.reason,
       'current_agent': decision.handoff_to,
       'messages': [
-        AIMessage(
-          f'[ TRIAGE ] Transferring to {decision.handoff_to}. {decision.reason}'
-        )
+        AIMessage(f'Transferring to {decision.handoff_to}. {decision.reason}')
       ],
     }
 
@@ -71,7 +69,7 @@ class ResearcherNodes:
       ]
     )
 
-    response.content = f'[ SALES ] {response.content}'
+    response.content = response.content
     model_used: AvailableModels = response.response_metadata.get(
       'model_name', 'UNKNOWN MODEL'
     )
@@ -94,7 +92,6 @@ class ResearcherNodes:
       ]
     )
 
-    response.content = f'[ SUPPORT ] {response.content}'
     model_used: AvailableModels = response.response_metadata.get(
       'model_name', 'UNKNOWN MODEL'
     )
@@ -117,7 +114,6 @@ class ResearcherNodes:
       ]
     )
 
-    response.content = f'[ BILLING ] {response.content}'
     model_used: AvailableModels = response.response_metadata.get(
       'model_name', 'UNKNOWN MODEL'
     )
