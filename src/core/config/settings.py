@@ -9,9 +9,9 @@ class Settings(BaseSettings):
   # LLM Configuration
   openai_api_key: str
   anthropic_api_key: str
-  primary_model: AvailableModels = 'gpt-4o'
+  primary_model: AvailableModels = 'gpt-4o-mini'
   fallback_model: AvailableModels = 'claude-sonnet-4-5-20250929'
-  fallback_model_2: AvailableModels = 'gpt-4o-mini'
+  fallback_model_2: AvailableModels = 'gpt-4o'
   embedding_model: AvailableModels = 'text-embedding-3-small'
 
   # LangSmith
@@ -31,6 +31,14 @@ class Settings(BaseSettings):
   opensearch_cache_index: str = 'chatagent_cache'
   opensearch_user: str = ''
   opensearch_password: str = ''
+
+  # MCP
+  mcp_url: str
+  mcp_remote_name: str
+  # Bearer token for the MCP endpoint, which sits behind authenticateAny. Note the
+  # server rejects expired JWTs, so this has to be a token that outlives the deploy.
+  mcp_token: str = ''
+  mcp_timeout_seconds: float = 30.0
 
   # Application
   app_env: str

@@ -13,6 +13,7 @@ from app.agents.researcher.routes import ResearcherRoutes
 from app.agents.researcher.tools import ResearcherTools
 from app.common.cache.hash_cache import HashCache
 from app.common.cache.semantic_cache import SemanticCache
+from app.common.mcp.mcp_client import McpClient
 from app.common.observability.metrics_collector import MetricsCollector
 from app.common.rag.rag import Rag
 from app.security.input_sanitiser import InputSanitiser
@@ -48,6 +49,8 @@ async def lifespan(app: FastAPI):
 
   models = Models()
 
+  mcp_client = McpClient(name='eightmile')
+
   input_sanitiser = InputSanitiser()
   pii_detector = PIIDetector()
   security_guard = SecurityGuard(llm=models.primary_llm)
@@ -64,7 +67,7 @@ async def lifespan(app: FastAPI):
 
   db_path = 'checkpoints.db'
   routes = ResearcherRoutes()
-  tools = ResearcherTools(rag=rag)
+  tools = ResearcherTools(rag=rag, mcp_client=mcp_client)
   tool_list = [tools.get_relevant_documents]
   nodes = ResearcherNodes(models=models, tools=tool_list)
 

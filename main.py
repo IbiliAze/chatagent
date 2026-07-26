@@ -12,6 +12,7 @@ from app.agents.researcher.nodes import ResearcherNodes
 from app.agents.researcher.routes import ResearcherRoutes
 from app.agents.researcher.state import ResearcherState
 from app.agents.researcher.tools import ResearcherTools
+from app.common.mcp.mcp_client import McpClient
 from app.common.rag.rag import Rag
 from core.config.settings import get_settings
 from core.models.models import Models
@@ -53,7 +54,8 @@ db_path = 'checkpoints.db'
 with SqliteSaver.from_conn_string(db_path) as saver:
   print(f'DB was created at {db_path}')
   models = Models()
-  tools = ResearcherTools(rag=rag)
+  mcp_client = McpClient(name='eightmile')
+  tools = ResearcherTools(rag=rag, mcp_client=mcp_client)
   tool_list = [tools.get_relevant_documents]
   nodes = ResearcherNodes(models=models, tools=tool_list)
   routes = ResearcherRoutes()
