@@ -22,7 +22,7 @@ from app.security.security_pipeline import SecurityPipeline
 from core.config.settings import get_settings
 from core.logging.logger import logger
 from core.models.models import Models
-from core.store.opensearch.opensearch import OpenSearch
+from core.store.vectorstore.opensearch import OpenSearch
 
 
 @asynccontextmanager
@@ -58,6 +58,7 @@ async def lifespan(app: FastAPI):
     input_sanitiser=input_sanitiser,
   )
   opensearch = OpenSearch()
+  opensearch.provision_indexes(embedding_dimension=1536)
   rag = Rag(opensearch.document_vectorstore)
 
   db_path = 'checkpoints.db'

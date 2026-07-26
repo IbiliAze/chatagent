@@ -17,7 +17,8 @@ class InputCheckResult:
 
 @dataclass(frozen=True)
 class OutputCheckResult:
-  is_allowed: bool
+  is_valid: bool
+  output: str
   reason: str | None
 
 
@@ -70,6 +71,12 @@ class SecurityPipeline:
     output_validation_result = self.output_validator.validate(output)
 
     if not output_validation_result.is_valid:
-      return OutputCheckResult(is_allowed=False, reason=output_validation_result.reason)
+      return OutputCheckResult(
+        is_valid=False,
+        output=output_validation_result.output,
+        reason=output_validation_result.reason,
+      )
 
-    return OutputCheckResult(is_allowed=True, reason=None)
+    return OutputCheckResult(
+      is_valid=True, output=output_validation_result.output, reason=None
+    )

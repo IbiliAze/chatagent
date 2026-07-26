@@ -29,6 +29,7 @@ class Settings(BaseSettings):
   log_level: str
   rate_limit: str
   cache_ttl_seconds: int
+  cache_max_entries: int = 1000
   max_retries: int = 0
   token_budget: int = 4000
 

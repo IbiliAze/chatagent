@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import TypedDict
 
 
 @dataclass(frozen=True)
@@ -7,12 +8,26 @@ class CacheStats:
   cached_queries: int
 
 
+class CacheEntry(TypedDict):
+  query: str
+  thread_id: str
+  response: str
+  timestamp: int
+  hits: int
+
+
 class Cache(ABC):
   @abstractmethod
-  def set(self, query: str, response: str) -> None: ...
+  async def set(self, query: str, thread_id: str, response: str) -> None: ...
 
   @abstractmethod
-  def get(self, query: str) -> str | None: ...
+  async def get(self, query: str, thread_id: str) -> str | None: ...
 
   @abstractmethod
-  def get_stats(self) -> CacheStats: ...
+  async def get_stats(self) -> CacheStats: ...
+
+  @abstractmethod
+  def purge_expired(self) -> int: ...
+
+  def _is_expired(self, entry: CacheEntry, now: float, ttl_seconds: float) -> bool:
+    return now - entry['timestamp'] >= ttl_seconds
