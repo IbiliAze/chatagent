@@ -32,6 +32,9 @@ class Cache(ABC):
   def purge_expired(self) -> int: ...
 
   @abstractmethod
+  async def clear(self) -> None: ...
+
+  @abstractmethod
   def __len__(self) -> int: ...
 
   def _is_expired(self, entry: CacheEntry, now: float, ttl_seconds: float) -> bool:

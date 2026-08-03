@@ -52,7 +52,7 @@ class SemanticCache(Cache):
 
     try:
       results = await self.vectorstore.asimilarity_search_with_relevance_scores(
-        query=query,
+        query=self._normalise_query(query),
         k=1,
         efficient_filter={
           'bool': {
@@ -108,71 +108,6 @@ class SemanticCache(Cache):
 
     return entry if return_full else entry['response']
 
-  async def get_with_entry(self, query: str, thread_id: str) -> CacheEntry | None:
-    """Find the one most semantically similar query
-    WHERE thread_id equals the current thread
-    AND timestamp is newer than the expiry cutoff"""
-
-    expires_after = int(time()) - self.ttl_seconds
-
-    try:
-      results = await self.vectorstore.asimilarity_search_with_relevance_scores(
-        query=query,
-        k=1,
-        efficient_filter={
-          'bool': {
-            'filter': [
-              {
-                'term': {
-                  'metadata.thread_id': thread_id,
-                }
-              },
-              {
-                'range': {
-                  'metadata.timestamp': {
-                    'gte': expires_after,
-                  }
-                }
-              },
-            ]
-          }
-        },
-      )
-    except NotFoundError:
-      return None
-
-    if not results:
-      return None
-
-    doc, score = results[0]
-
-    # Raw OpenSearch kNN score, not a cosine similarity: the score formula
-    # depends on the index engine and space_type, so comparing it directly
-    # avoids hardcoding a conversion that silently breaks if either changes.
-    # Monotonic in cosine either way, so it is still a valid cutoff.
-    if score < self.score_threshold:
-      return None
-
-    if doc.id is None:
-      return None
-
-    entry = cast(CacheEntry, doc.metadata)
-
-    required_keys = {
-      'hits',
-      'query',
-      'response',
-      'thread_id',
-      'timestamp',
-    }
-
-    if not required_keys.issubset(entry):
-      return None
-
-    self.increment_entries_queue.append(doc.id)
-
-    return entry
-
   async def set(
     self,
     query: str,
@@ -181,18 +116,22 @@ class SemanticCache(Cache):
   ) -> None:
     """Cache a response, evicting least-frequently-used entries if full."""
 
-    document_id = self._get_cache_id(query, thread_id)
+    normalised_query = self._normalise_query(query=query)
+
+    document_id = self._get_cache_id(normalised_query, thread_id)
 
     entry: CacheEntry = {
       'hits': 0,
-      'query': query,
+      'query': normalised_query,
       'response': response,
       'thread_id': thread_id,
       'timestamp': int(time()),
     }
 
     await self.vectorstore.aadd_texts(  # type: ignore[reportUnknownMemberType]
-      texts=[query], metadatas=[cast(dict[str, Any], entry)], ids=[document_id]
+      texts=[normalised_query],
+      metadatas=[cast(dict[str, Any], entry)],
+      ids=[document_id],
     )
 
   async def get_stats(self) -> CacheStats:
@@ -216,7 +155,7 @@ class SemanticCache(Cache):
       },
       params={
         'conflicts': 'proceed',
-        'refresh': True,
+        'refresh': 'true',
       },
     )
 
@@ -276,10 +215,14 @@ class SemanticCache(Cache):
     self.vectorstore.delete(ids=document_ids)
     return len(document_ids)
 
+  def _normalise_query(self, query: str) -> str:
+    """Normalise query."""
+    return ' '.join(query.casefold().split())
+
   def _get_cache_id(self, query: str, thread_id: str) -> str:
     """Get cache entry ID by normalising the query."""
-    normalized_query = ' '.join(query.casefold().split())
-    value = f'{thread_id}:{normalized_query}'
+    normalised_query = self._normalise_query(query=query)
+    value = f'{thread_id}:{normalised_query}'
     return sha256(value.encode()).hexdigest()
 
   def _drain_queue(self) -> list[str]:
@@ -341,7 +284,7 @@ class SemanticCache(Cache):
       response = self.vectorstore.client.bulk(
         index=self.settings.opensearch_cache_index,
         body=operations,
-        params={'refresh': True},
+        params={'refresh': 'true'},
       )
     except TransportError:
       logger.exception('Cache entry increment transport error')
@@ -403,6 +346,21 @@ class SemanticCache(Cache):
       except Exception:
         # Never let one bad pass kill the loop.
         logger.exception('Cache maintenance pass failed')
+
+  async def clear(self):
+    """Delete all entries from the cache index."""
+    await self.vectorstore.async_client.delete_by_query(
+      index=self.settings.opensearch_cache_index,
+      body={
+        'query': {
+          'match_all': {},
+        },
+      },
+      params={
+        'conflicts': 'proceed',
+        'refresh': 'true',
+      },
+    )
 
   def __len__(self):
     """Get number of items in the cache."""

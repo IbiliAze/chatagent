@@ -109,6 +109,10 @@ class HashCache(Cache):
 
     return CacheStats(cached_queries=live)
 
+  async def clear(self):
+    """Clear the cache"""
+    self.cache.clear()
+
   def __len__(self):
     """Get number of items in the cache."""
     return len(self.cache)
