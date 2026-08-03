@@ -21,13 +21,18 @@ class Cache(ABC):
   async def set(self, query: str, thread_id: str, response: str) -> None: ...
 
   @abstractmethod
-  async def get(self, query: str, thread_id: str) -> str | None: ...
+  async def get(
+    self, query: str, thread_id: str, return_full: bool = False
+  ) -> str | CacheEntry | None: ...
 
   @abstractmethod
   async def get_stats(self) -> CacheStats: ...
 
   @abstractmethod
   def purge_expired(self) -> int: ...
+
+  @abstractmethod
+  def __len__(self) -> int: ...
 
   def _is_expired(self, entry: CacheEntry, now: float, ttl_seconds: float) -> bool:
     return now - entry['timestamp'] >= ttl_seconds

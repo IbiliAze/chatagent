@@ -41,7 +41,9 @@ class SemanticCache(Cache):
     self.vectorstore = vectorstore
     self.increment_entries_queue: deque[str] = deque(maxlen=1000)
 
-  async def get(self, query: str, thread_id: str) -> str | None:
+  async def get(
+    self, query: str, thread_id: str, return_full: bool = False
+  ) -> str | CacheEntry | None:
     """Find the one most semantically similar query
     WHERE thread_id equals the current thread
     AND timestamp is newer than the expiry cutoff"""
@@ -104,7 +106,72 @@ class SemanticCache(Cache):
 
     self.increment_entries_queue.append(doc.id)
 
-    return entry['response']
+    return entry if return_full else entry['response']
+
+  async def get_with_entry(self, query: str, thread_id: str) -> CacheEntry | None:
+    """Find the one most semantically similar query
+    WHERE thread_id equals the current thread
+    AND timestamp is newer than the expiry cutoff"""
+
+    expires_after = int(time()) - self.ttl_seconds
+
+    try:
+      results = await self.vectorstore.asimilarity_search_with_relevance_scores(
+        query=query,
+        k=1,
+        efficient_filter={
+          'bool': {
+            'filter': [
+              {
+                'term': {
+                  'metadata.thread_id': thread_id,
+                }
+              },
+              {
+                'range': {
+                  'metadata.timestamp': {
+                    'gte': expires_after,
+                  }
+                }
+              },
+            ]
+          }
+        },
+      )
+    except NotFoundError:
+      return None
+
+    if not results:
+      return None
+
+    doc, score = results[0]
+
+    # Raw OpenSearch kNN score, not a cosine similarity: the score formula
+    # depends on the index engine and space_type, so comparing it directly
+    # avoids hardcoding a conversion that silently breaks if either changes.
+    # Monotonic in cosine either way, so it is still a valid cutoff.
+    if score < self.score_threshold:
+      return None
+
+    if doc.id is None:
+      return None
+
+    entry = cast(CacheEntry, doc.metadata)
+
+    required_keys = {
+      'hits',
+      'query',
+      'response',
+      'thread_id',
+      'timestamp',
+    }
+
+    if not required_keys.issubset(entry):
+      return None
+
+    self.increment_entries_queue.append(doc.id)
+
+    return entry
 
   async def set(
     self,
@@ -336,3 +403,8 @@ class SemanticCache(Cache):
       except Exception:
         # Never let one bad pass kill the loop.
         logger.exception('Cache maintenance pass failed')
+
+  def __len__(self):
+    """Get number of items in the cache."""
+    response = self.vectorstore.client.count(index=self.settings.opensearch_cache_index)
+    return cast(int, response['count'])

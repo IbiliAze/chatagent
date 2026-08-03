@@ -40,7 +40,9 @@ class HashCache(Cache):
     normalised = query.lower().strip()
     return hashlib.md5(normalised.encode(), usedforsecurity=False).hexdigest()
 
-  async def get(self, query: str, thread_id: str) -> str | None:
+  async def get(
+    self, query: str, thread_id: str, return_full: bool = False
+  ) -> str | CacheEntry | None:
     """Get cached response if the same query exists and has not expired"""
     query_hash = self._hash_query(query)
 
@@ -59,7 +61,7 @@ class HashCache(Cache):
 
       entry['hits'] += 1
       self.cache.move_to_end(query_hash)
-      return entry['response']
+      return entry if return_full else entry['response']
 
   async def set(self, query: str, thread_id: str, response: str) -> None:
     """Cache a response, evicting the least recently used entry if full."""
@@ -106,3 +108,7 @@ class HashCache(Cache):
       )
 
     return CacheStats(cached_queries=live)
+
+  def __len__(self):
+    """Get number of items in the cache."""
+    return len(self.cache)
