@@ -1,6 +1,6 @@
 import pytest
 
-from app.common.cache.hash_cache import HashCache
+from app.cache.hash_cache import HashCache
 
 
 @pytest.fixture

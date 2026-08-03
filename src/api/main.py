@@ -11,11 +11,11 @@ from app.agents.researcher.agent import ResearcherAgent
 from app.agents.researcher.nodes import ResearcherNodes
 from app.agents.researcher.routes import ResearcherRoutes
 from app.agents.researcher.tools import ResearcherTools
-from app.common.cache.hash_cache import HashCache
-from app.common.cache.semantic_cache import SemanticCache
-from app.common.mcp.mcp_client import McpClient
-from app.common.observability.metrics_collector import MetricsCollector
-from app.common.rag.rag import Rag
+from app.cache.hash_cache import HashCache
+from app.cache.semantic_cache import SemanticCache
+from app.mcp.mcp_client import McpClient
+from app.observability.metrics_collector import MetricsCollector
+from app.rag.rag import Rag
 from app.security.input_sanitiser import InputSanitiser
 from app.security.language_detector import LanguageDetector
 from app.security.output_validator import OutputValidator

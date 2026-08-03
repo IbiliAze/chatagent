@@ -27,6 +27,7 @@ class TriageUpdate(TypedDict):
   current_agent: ResearcherAgent
   handoff_reason: str
   context_summary: str
+  model_used: NotRequired[AvailableModels]
   messages: list[BaseMessage]
 
 

@@ -1,7 +1,7 @@
 from langchain_core.tools import BaseTool, StructuredTool
 
-from app.common.mcp.mcp_client import McpClient
-from app.common.rag.rag import Rag
+from app.mcp.mcp_client import McpClient
+from app.rag.rag import Rag
 from core.config.settings import get_settings
 
 

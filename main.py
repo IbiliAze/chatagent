@@ -12,8 +12,8 @@ from app.agents.researcher.nodes import ResearcherNodes
 from app.agents.researcher.routes import ResearcherRoutes
 from app.agents.researcher.state import ResearcherState
 from app.agents.researcher.tools import ResearcherTools
-from app.common.mcp.mcp_client import McpClient
-from app.common.rag.rag import Rag
+from app.mcp.mcp_client import McpClient
+from app.rag.rag import Rag
 from app.security.language_detector import LanguageDetector
 from core.config.settings import get_settings
 from core.models.models import Models

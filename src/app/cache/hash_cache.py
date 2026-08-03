@@ -3,7 +3,7 @@ from collections import OrderedDict
 from threading import Lock
 from time import time
 
-from app.common.cache.cache import Cache, CacheEntry, CacheStats
+from app.cache.cache import Cache, CacheEntry, CacheStats
 from core.config.settings import get_settings
 
 type CacheStore = OrderedDict[str, CacheEntry]

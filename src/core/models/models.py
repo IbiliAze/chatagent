@@ -5,8 +5,14 @@ import httpx
 import openai
 from anthropic import (
   APIConnectionError as AnthropicAPIConnectionError,
+)
+from anthropic import (
   APITimeoutError as AnthropicAPITimeoutError,
+)
+from anthropic import (
   InternalServerError as AnthropicInternalServerError,
+)
+from anthropic import (
   RateLimitError as AnthropicRateLimitError,
 )
 from langchain_anthropic import ChatAnthropic
@@ -20,10 +26,6 @@ from pydantic import BaseModel
 
 from core.config.settings import get_settings
 
-# Only transient, provider-side failures are worth retrying against another
-# model. The default for with_fallbacks is (Exception,), which would also burn
-# the whole chain on malformed requests or schema-validation errors that are
-# guaranteed to fail on every provider.
 FALLBACK_ERRORS: tuple[type[BaseException], ...] = (
   openai.APITimeoutError,
   openai.APIConnectionError,
@@ -68,8 +70,6 @@ class Models:
 
     self._chain: list[BaseChatModel] = [self.primary_llm, fallback_llm, fallback_llm_2]
 
-    # BaseChatModel is only declared as returning BaseMessage, but every
-    # implementation yields an AIMessage, and the nodes rely on that.
     self.llm = self._compose(
       lambda model: cast(Runnable[LanguageModelInput, AIMessage], model)
     )
@@ -104,8 +104,6 @@ class Models:
   def with_schema[SchemaT: BaseModel](
     self, schema: type[SchemaT]
   ) -> RunnableWithFallbacks[LanguageModelInput, SchemaT]:
-    # with_structured_output is declared as dict | BaseModel regardless of the
-    # schema it is given; narrow it back to the schema the caller passed in.
     return self._compose(
       lambda model: cast(
         Runnable[LanguageModelInput, SchemaT],

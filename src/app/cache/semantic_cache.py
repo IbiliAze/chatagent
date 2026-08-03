@@ -11,7 +11,7 @@ from opensearchpy.exceptions import (
   TransportError,
 )
 
-from app.common.cache.cache import Cache, CacheEntry, CacheStats
+from app.cache.cache import Cache, CacheEntry, CacheStats
 from core.config.settings import get_settings
 from core.logging.logger import logger
 
