@@ -49,3 +49,8 @@ class CircuitBreaker:
         self.state = 'open'
 
       raise e
+
+  def clear(self):
+    """Clear the state."""
+    self.failures = 0
+    self.last_failure_time = 0
