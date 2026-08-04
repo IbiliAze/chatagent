@@ -1,6 +1,6 @@
 import pytest
 
-from app.cost_optimisation.token_budget import TokenBudget
+from app.cost_optimisation.token_budget import CheckBudgetResponse, TokenBudget
 
 
 @pytest.fixture
@@ -16,3 +16,21 @@ class TestEstimation:
     assert estimate is not None
     assert type(estimate) is int
     assert estimate > 0
+
+
+class TestBudget:
+  def test_outside_budget(self, token_budget: TokenBudget) -> None:
+    response = token_budget.check_budget('Hi how much will I cost?' * 100, 'gpt-4o')
+
+    assert response is not None
+    assert isinstance(response, CheckBudgetResponse)
+    assert response.within_budget is False
+    assert response.tokens > 0
+
+  def test_within_budget(self, token_budget: TokenBudget) -> None:
+    response = token_budget.check_budget('Hi how much will I cost?', 'gpt-4o')
+
+    assert response is not None
+    assert isinstance(response, CheckBudgetResponse)
+    assert response.within_budget is True
+    assert response.tokens > 0
