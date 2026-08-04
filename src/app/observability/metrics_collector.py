@@ -34,7 +34,7 @@ class MetricsCollector:
     output_tokens: int,
     error: bool = False,
     cache_hit: bool = False,
-  ):
+  ) -> None:
     self.metrics['requests_total'] += 1
     self.metrics['latecy_sum'] += latency_ms
     self.metrics['latency_count'] += 1
@@ -74,7 +74,7 @@ class MetricsCollector:
       total_requests=int(self.metrics['requests_total']),
       total_errors=int(self.metrics['errors_total']),
       avg_latency_ms=round(avg_latency, 2),
-      error_rate=f'{error_rate}:.2%',
+      error_rate=f'{error_rate}%',
       cache_hit_rate=cache_hit_rate,
       total_input_tokens=self.metrics['tokens_input'],
       total_output_tokens=self.metrics['tokens_output'],
