@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import tiktoken
 
-from core.config.settings import Settings
+from core.config.settings import get_settings
 from core.config.types import AvailableModels
 
 
@@ -19,8 +19,11 @@ class GetStatsResponse:
   total_requests: int
 
 
+settings = get_settings()
+
+
 class TokenBudget:
-  def __init__(self, max_tokens_per_request: int = Settings.token_budget) -> None:
+  def __init__(self, max_tokens_per_request: int = settings.token_budget) -> None:
     self.max_tokens_per_request = max_tokens_per_request
     self.usage = {
       'total_input': 0,
