@@ -5,7 +5,7 @@ from dataclasses import dataclass
 class MetricsSummary:
   total_requests: int
   total_errors: int
-  error_rate: str
+  error_rate: float
   avg_latency_ms: float
   total_input_tokens: float
   total_output_tokens: float
@@ -74,7 +74,7 @@ class MetricsCollector:
       total_requests=int(self.metrics['requests_total']),
       total_errors=int(self.metrics['errors_total']),
       avg_latency_ms=round(avg_latency, 2),
-      error_rate=f'{error_rate}%',
+      error_rate=round(error_rate, 4),
       cache_hit_rate=cache_hit_rate,
       total_input_tokens=self.metrics['tokens_input'],
       total_output_tokens=self.metrics['tokens_output'],

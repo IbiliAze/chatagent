@@ -6,8 +6,8 @@ class MetricsResponse(BaseModel):
 
   total_requests: int
   total_errors: int
-  error_state: str
+  error_rate: float
   avg_latency_ms: float
-  cache_hit_rate: int
+  cache_hit_rate: float
   total_input_tokens: int
   total_output_tokens: int
