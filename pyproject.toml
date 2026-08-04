@@ -42,6 +42,7 @@ packages = ["src/app", "src/core", "src/api"]
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
+    "pylint>=4.0.6",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "ruff>=0.15.21",
