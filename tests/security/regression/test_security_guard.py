@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from cases import (
+from tests.security.regression.cases import (
   SECURITY_CASES,
   SecurityRegressionCase,
 )

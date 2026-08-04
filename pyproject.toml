@@ -56,7 +56,12 @@ indent-width = 2
 quote-style = "single"
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
+# importlib mode keeps same-named test modules in different folders from colliding
+# (three test_security_guard.py, two test_rag.py, two cases.py) without needing
+# __init__.py in every test directory.
+addopts = "--import-mode=importlib"
+consider_namespace_packages = true
 asyncio_mode = "auto"
 markers = [
     "integration: makes real network calls to external services (slow, needs credentials)",
