@@ -65,6 +65,21 @@ class Rag:
       return 'Document search is temporarily unavailable.'
     return self._format_docs_for_context(documents)
 
+  def clear(self) -> None:
+    """Clear the store"""
+    self.vectorstore.client.delete_by_query(
+      index=self.settings.opensearch_documents_index,
+      body={
+        'query': {
+          'match_all': {},
+        },
+      },
+      params={
+        'conflicts': 'proceed',
+        'refresh': 'true',
+      },
+    )
+
   def _build_retriever(self) -> VectorStoreRetriever:
     """Build a similarity retriever"""
     return self.vectorstore.as_retriever(

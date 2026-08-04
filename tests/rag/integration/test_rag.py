@@ -25,6 +25,7 @@ def rag(vector_store: OpenSearchVectorSearch) -> Rag:
 
 class TestAddition:
   def test_add_documents_returns(self, rag: Rag) -> None:
+    rag.clear()
     number_of_chunks = rag.add_documents(
       documents=[Document(page_content='My test document')],
       source='Test document source',
@@ -35,11 +36,24 @@ class TestAddition:
     assert number_of_chunks == 1
 
   def test_add_texts_returns(self, rag: Rag) -> None:
+    rag.clear()
     number_of_chunks = rag.add_texts(texts=['My small text'], source='Test text source')
 
     assert number_of_chunks is not None
     assert type(number_of_chunks) is int
     assert number_of_chunks == 1
 
+  def test_ask_returns_relevant_info(self, rag: Rag):
+    knowledge = 'Eight mile providers software solutions for agentic apps'
 
-#   def test_ask_returns_relevant_info(self, rag:Rag)
+    rag.clear()
+    rag.add_documents(
+      documents=[Document(page_content=knowledge)],
+      source='Test document source',
+    )
+
+    response = rag.ask('Who are eight mile?')
+
+    assert response is not None
+    assert type(response) is str
+    assert knowledge in response
