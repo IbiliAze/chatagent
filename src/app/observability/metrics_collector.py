@@ -7,8 +7,8 @@ class MetricsSummary:
   total_errors: int
   error_rate: float
   avg_latency_ms: float
-  total_input_tokens: float
-  total_output_tokens: float
+  total_input_tokens: int
+  total_output_tokens: int
   cache_hit_rate: float
 
 
@@ -19,7 +19,7 @@ class MetricsCollector:
     self.metrics: dict[str, float] = {
       'requests_total': 0,
       'errors_total': 0,
-      'latecy_sum': 0,
+      'latency_sum': 0,
       'latency_count': 0,
       'tokens_input': 0,
       'tokens_output': 0,
@@ -36,7 +36,7 @@ class MetricsCollector:
     cache_hit: bool = False,
   ) -> None:
     self.metrics['requests_total'] += 1
-    self.metrics['latecy_sum'] += latency_ms
+    self.metrics['latency_sum'] += latency_ms
     self.metrics['latency_count'] += 1
     self.metrics['tokens_input'] += input_tokens
     self.metrics['tokens_output'] += output_tokens
@@ -52,7 +52,7 @@ class MetricsCollector:
   def get_summary(self) -> MetricsSummary:
     """Get metrics summary."""
     avg_latency = (
-      self.metrics['latecy_sum'] / self.metrics['latency_count']
+      self.metrics['latency_sum'] / self.metrics['latency_count']
       if self.metrics['latency_count'] > 0
       else 0
     )
@@ -76,6 +76,6 @@ class MetricsCollector:
       avg_latency_ms=round(avg_latency, 2),
       error_rate=round(error_rate, 4),
       cache_hit_rate=cache_hit_rate,
-      total_input_tokens=self.metrics['tokens_input'],
-      total_output_tokens=self.metrics['tokens_output'],
+      total_input_tokens=int(self.metrics['tokens_input']),
+      total_output_tokens=int(self.metrics['tokens_output']),
     )
