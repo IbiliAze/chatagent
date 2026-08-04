@@ -99,6 +99,9 @@ class OpenSearch:
               'source': {
                 'type': 'keyword',
               },
+              'indexed_at': {
+                'type': 'date',
+              },
               'document_id': {
                 'type': 'keyword',
               },

@@ -43,6 +43,8 @@ class TestAddition:
     assert type(number_of_chunks) is int
     assert number_of_chunks == 1
 
+
+class TestQueryResponse:
   def test_ask_returns_relevant_info(self, rag: Rag):
     knowledge = 'Eight mile providers software solutions for agentic apps'
 
