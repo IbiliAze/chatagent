@@ -124,7 +124,7 @@ class McpClient:
             Only reached for transport and timeout failures: a tool that ran and
             returned isError already arrives as readable content.
             """
-            logger.exception(f'MCP tool {remote.name!r} on {self.name!r} failed')
+            logger.exception('MCP tool %r on %r failed', remote.name, self.name)
             return (f'{tool_name} is temporarily unavailable.', None)
 
         async def call(**kwargs: Any) -> Any:
@@ -132,7 +132,7 @@ class McpClient:
                 return await coroutine(**kwargs)
             except ToolException:
                 raise
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 return unavailable()
 
         def call_sync(**kwargs: Any) -> Any:
@@ -144,7 +144,7 @@ class McpClient:
                 return self._run(call(**kwargs))
             except ToolException:
                 raise
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 return unavailable()
 
         return StructuredTool(
