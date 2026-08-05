@@ -1,6 +1,7 @@
 """Health check endpoint."""
 
-from api.main import agent, app, cache, security
+from api import main
+from api.main import app
 from api.models.health import HealthResponse
 from core.config.settings import get_settings
 
@@ -12,9 +13,9 @@ async def health():
     settings = get_settings()
 
     checks = {
-        'agent': agent is not None,
-        'security': security is not None,
-        'cache': cache is not None,
+        'agent': hasattr(main, 'agent'),
+        'security': hasattr(main, 'security'),
+        'cache': hasattr(main, 'cache'),
     }
 
     all_healthy = all(checks.values())
