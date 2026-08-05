@@ -3,9 +3,9 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, Request
 from langsmith import traceable  # pyright: ignore[reportUnknownVariableType]
 
-from api.main import agent, app, cache, limiter, metrics, security
+from api.main import agent, app, cache, limiter, metrics, security, token_budget
 from api.models.chat import ChatRequest, ChatResponse
-from app.agents.researcher.state import ResearcherState
+from app.observability.request_timer import RequestTimer
 from core.config.settings import get_settings
 from core.logging.logger import logger
 
@@ -80,7 +80,7 @@ async def chat(request: Request, body: ChatRequest):
     try:
       config = agent.build_config(thread_id=thread_id)
       input = agent.build_message(input=input_text)
-      agent.process_message(input=input, config=config)
+      output = agent.process_message(input=input, config=config)
 
     except Exception as e:
       logger.error(
@@ -100,4 +100,43 @@ async def chat(request: Request, body: ChatRequest):
         status_code=500, detail='An error occured while processing your request.'
       )
 
-  return ChatResponse()
+    output_text = str(output['messages'][-1])
+    model_used = output['model_used'] or ''
+
+    # 4. Output validation
+    output_result = security.check_output(output_text)
+    security_notes.append(output_result.reason) if output_result.reason else None
+
+    # 5. Cache response
+    await cache.hash.set(query=input_text, thread_id=thread_id, response=output_text)
+    await cache.semantic.set(
+      query=input_text, thread_id=thread_id, response=output_text
+    )
+
+  # 6. Log and record metrics
+  input_tokens = token_budget.estimate_tokens(text=input_text, model=model_used)
+  output_tokens = token_budget.estimate_tokens(text=output_text, model=model_used)
+  metrics.record_request(
+    latency_ms=timer.elapsed_ms,
+    input_tokens=input_tokens,
+    output_tokens=output_tokens,
+    cache_hit=False,
+  )
+
+  logger.info(
+    'Request completed',
+    extra={
+      'thread_id': thread_id,
+      'model_used': model_used,
+      'latency_ms': round(timer.elapsed_ms, 2),
+    },
+  )
+
+  return ChatResponse(
+    model_used=model_used,
+    thread_id=thread_id,
+    response=output_text,
+    cached=False,
+    timestamp=datetime.now(timezone.utc).isoformat(),
+    processing_time_ms=timer.elapsed_ms,
+  )

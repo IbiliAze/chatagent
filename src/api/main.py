@@ -14,6 +14,7 @@ from app.agents.researcher.routes import ResearcherRoutes
 from app.agents.researcher.tools import ResearcherTools
 from app.cache.hash_cache import HashCache
 from app.cache.semantic_cache import SemanticCache
+from app.cost_optimisation.token_budget import TokenBudget
 from app.mcp.mcp_client import McpClient
 from app.observability.metrics_collector import MetricsCollector
 from app.rag.rag import Rag
@@ -47,7 +48,7 @@ cache: AvailableCache
 async def lifespan(app: FastAPI):
   """Initialise all components."""
 
-  global security, cache, metrics, agent
+  global security, cache, metrics, agent, token_budget
 
   settings = get_settings()
 
@@ -67,6 +68,7 @@ async def lifespan(app: FastAPI):
 
   mcp_client = McpClient(name='eightmile')
 
+  token_budget = TokenBudget()
   input_sanitiser = InputSanitiser()
   pii_detector = PIIDetector()
   language_detector = LanguageDetector()
