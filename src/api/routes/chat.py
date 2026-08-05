@@ -13,7 +13,7 @@ settings = get_settings()
 
 
 @app.post('/chat', response_model=ChatResponse)
-@limiter.limit(settings.rate_limit)
+@limiter.limit(settings.rate_limit)  # pyright: ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
 @traceable(name='chat_endpoint')
 async def chat(request: Request, body: ChatRequest):
   """Main chat endpoint."""
