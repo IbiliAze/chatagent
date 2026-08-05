@@ -45,20 +45,8 @@ class SecurityPipeline:
     """Process the user input prompt through security checks."""
     notes: list[str] = []
 
-    # 1. Check for suspicious input
-    suspense = self.input_sanitiser.is_suspicious(input)
-    if suspense.is_suspicious:
-      notes.append(suspense.reason) if suspense.reason is not None else None
-      return InputCheckResult(is_allowed=False, security_notes=notes, cleaned_text='')
-
-    # 2. Sanitise the input
-    cleaned = self.input_sanitiser.sanitise(input)
-
-    # 3. Mask PII
-    cleaned_masked = self.pii_detector.mask(cleaned)
-
-    # 4. Detect other languages
-    language_detection_result = self.language_detector.check(cleaned)
+    # 1. Detect other languages
+    language_detection_result = self.language_detector.check(input)
     if not language_detection_result.allowed:
       return InputCheckResult(
         is_allowed=False,
@@ -68,6 +56,18 @@ class SecurityPipeline:
           or f'Rogue language detected: {language_detection_result.detected_language}'
         ],
       )
+
+    # 2. Check for suspicious input
+    suspense = self.input_sanitiser.is_suspicious(input)
+    if suspense.is_suspicious:
+      notes.append(suspense.reason) if suspense.reason is not None else None
+      return InputCheckResult(is_allowed=False, security_notes=notes, cleaned_text='')
+
+    # 3. Sanitise the input
+    cleaned = self.input_sanitiser.sanitise(input)
+
+    # 4. Mask PII
+    cleaned_masked = self.pii_detector.mask(cleaned)
 
     # 5. Go through security guard
     security_check_result = self.security_guard.security_check(cleaned_masked)
@@ -85,7 +85,17 @@ class SecurityPipeline:
     """Process the LLM output response through security checks."""
     output_validation_result = self.output_validator.validate(output)
 
-    # 1. Validate output
+    # 1. Detect other languages
+    language_detection_result = self.language_detector.check(output)
+    if not language_detection_result.allowed:
+      return OutputCheckResult(
+        is_valid=False,
+        output='',
+        reason=language_detection_result.reason
+        or f'Rogue language detected: {language_detection_result.detected_language}',
+      )
+
+    # 2. Validate output
     output_validation_result = self.output_validator.validate(output)
     if not output_validation_result.is_valid:
       return OutputCheckResult(
@@ -94,7 +104,7 @@ class SecurityPipeline:
         reason=output_validation_result.reason,
       )
 
-    # 2. Detect other languages
+    # 3. Detect other languages
     language_detection_result = self.language_detector.check(output)
     if not language_detection_result.allowed:
       return OutputCheckResult(
