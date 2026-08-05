@@ -7,10 +7,10 @@ from langgraph.prebuilt.tool_node import ToolNode
 from langsmith import traceable  # pyright: ignore[reportUnknownVariableType]
 
 from app.agents.researcher.prompts import (
-    BILLING_AGENT_PROMPT,
-    SALES_AGENT_PROMPT,
-    SUPPORT_AGENT_PROMPT,
     TRIAGE_AGENT_PROMPT,
+    billing_agent_prompt,
+    sales_agent_prompt,
+    support_agent_prompt,
 )
 from app.agents.researcher.schemas import HandoffDecision
 from app.agents.researcher.state import (
@@ -80,7 +80,7 @@ class ResearcherNodes:
         response = self.llm_with_tools.invoke(
             [
                 SystemMessage(
-                    content=SALES_AGENT_PROMPT(state.get('context_summary', 'None'))
+                    content=sales_agent_prompt(state.get('context_summary', 'None'))
                 ),
                 *state['messages'],
             ]
@@ -104,7 +104,7 @@ class ResearcherNodes:
         response = self.llm_with_tools.invoke(
             [
                 SystemMessage(
-                    content=SUPPORT_AGENT_PROMPT(state.get('context_summary', 'None'))
+                    content=support_agent_prompt(state.get('context_summary', 'None'))
                 ),
                 *state['messages'],
             ]
@@ -127,7 +127,7 @@ class ResearcherNodes:
         response = self.llm_with_tools.invoke(
             [
                 SystemMessage(
-                    content=BILLING_AGENT_PROMPT(state.get('context_summary', 'None'))
+                    content=billing_agent_prompt(state.get('context_summary', 'None'))
                 ),
                 *state['messages'],
             ]

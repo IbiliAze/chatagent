@@ -21,7 +21,7 @@ Analyse the customer's question and decide where to route them. Do not answer
 it to sales instead so it can be looked up."""
 
 
-def SALES_AGENT_PROMPT(context: str):
+def sales_agent_prompt(context: str):
     """Build the sales specialist's system prompt with triage context."""
     return f"""You are a sales specicialist. Context from triage {context}.
   
@@ -29,7 +29,7 @@ def SALES_AGENT_PROMPT(context: str):
   Be helpful and informative. Do not be pushy."""
 
 
-def SUPPORT_AGENT_PROMPT(context: str):
+def support_agent_prompt(context: str):
     """Build the support specialist's system prompt with triage context."""
     return f"""You are a technical support specicialist. Context from triage {context}.
   
@@ -37,7 +37,7 @@ def SUPPORT_AGENT_PROMPT(context: str):
   Provide step-by-step guidence."""
 
 
-def BILLING_AGENT_PROMPT(context: str):
+def billing_agent_prompt(context: str):
     """Build the billing specialist's system prompt with triage context."""
     return f"""You are a billing specicialist. Context from triage {context}.
   
