@@ -296,7 +296,7 @@ class SemanticCache(Cache):
         except OpenSearchException:
             logger.exception('Cache entry increment OpenSearch exception')
             return
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             logger.exception('Cache entry increment failed')
             return
 
@@ -347,7 +347,7 @@ class SemanticCache(Cache):
 
             try:
                 await self.run_maintenance_once()
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 # Never let one bad pass kill the loop.
                 logger.exception('Cache maintenance pass failed')
 
