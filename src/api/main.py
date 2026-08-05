@@ -152,3 +152,16 @@ async def rate_limit_handler(  # pylint: disable=unused-argument
     request: Request, exc: RateLimitExceeded
 ):
     """Handle requests that exceed the rate limit."""
+
+
+# Imported down here, after `app` and `limiter` exist, since the route modules
+# reach back into this module for them at decoration/request time.
+from api.routes.cache import router as cache_router  # noqa: E402  pylint: disable=wrong-import-position
+from api.routes.chat import router as chat_router  # noqa: E402  pylint: disable=wrong-import-position
+from api.routes.health import router as health_router  # noqa: E402  pylint: disable=wrong-import-position
+from api.routes.metrics import router as metrics_router  # noqa: E402  pylint: disable=wrong-import-position
+
+app.include_router(chat_router)
+app.include_router(health_router)
+app.include_router(metrics_router)
+app.include_router(cache_router)

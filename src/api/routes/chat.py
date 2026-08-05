@@ -2,10 +2,10 @@
 
 from datetime import datetime, timezone
 
-from fastapi import HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request
 from langsmith import traceable  # pyright: ignore[reportUnknownVariableType]
 
-from api.main import agent, app, cache, limiter, metrics, security, token_budget
+from api import main
 from api.models.chat import ChatRequest, ChatResponse
 from app.agents.researcher.state import ResearcherState
 from app.observability.request_timer import RequestTimer
@@ -14,14 +14,15 @@ from core.config.types import AvailableModels
 from core.logging.logger import logger
 
 settings = get_settings()
+router = APIRouter()
 
 
 def _invoke_agent(thread_id: str, input_text: str) -> ResearcherState:
     """Run the agent, converting failures into a 500 with recorded metrics."""
     try:
-        config = agent.build_config(thread_id=thread_id)
-        state = agent.build_message(text=input_text)
-        return agent.process_message(state=state, config=config)
+        config = main.agent.build_config(thread_id=thread_id)
+        state = main.agent.build_message(text=input_text)
+        return main.agent.process_message(state=state, config=config)
 
     except Exception as e:
         logger.error(
@@ -30,7 +31,7 @@ def _invoke_agent(thread_id: str, input_text: str) -> ResearcherState:
             extra={'error': str(e), 'thread_id': thread_id},
         )
 
-        metrics.record_request(
+        main.metrics.record_request(
             cache_hit=False,
             error=True,
             latency_ms=0,
@@ -52,9 +53,9 @@ def _finalize_metrics(
     timer: RequestTimer,
 ) -> None:
     """Record token usage and latency, and log request completion."""
-    input_tokens = token_budget.estimate_tokens(text=input_text, model=model_used)
-    output_tokens = token_budget.estimate_tokens(text=output_text, model=model_used)
-    metrics.record_request(
+    input_tokens = main.token_budget.estimate_tokens(text=input_text, model=model_used)
+    output_tokens = main.token_budget.estimate_tokens(text=output_text, model=model_used)
+    main.metrics.record_request(
         latency_ms=timer.elapsed_ms,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
@@ -71,8 +72,8 @@ def _finalize_metrics(
     )
 
 
-@app.post('/chat', response_model=ChatResponse)
-@limiter.limit(  # pyright: ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
+@router.post('/chat', response_model=ChatResponse)
+@main.limiter.limit(  # pyright: ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
     settings.rate_limit
 )
 @traceable(name='chat_endpoint')
@@ -84,7 +85,7 @@ async def chat(request: Request, body: ChatRequest):  # pylint: disable=unused-a
         security_notes: list[str] = []
 
         # 1. Security check
-        input_result = security.check_input(body.message)
+        input_result = main.security.check_input(body.message)
         security_notes.extend(input_result.security_notes)
 
         if not input_result.is_allowed:
@@ -93,7 +94,7 @@ async def chat(request: Request, body: ChatRequest):  # pylint: disable=unused-a
                 extra={'reason': input_result.security_notes, 'thread_id': thread_id},
             )
 
-            metrics.record_request(
+            main.metrics.record_request(
                 latency_ms=0,
                 error=True,
                 cache_hit=False,
@@ -109,9 +110,9 @@ async def chat(request: Request, body: ChatRequest):  # pylint: disable=unused-a
         input_text = input_result.cleaned_text
 
         # 2. Cache lookup
-        entry = await cache.hash.get(input_text, thread_id)
+        entry = await main.cache.hash.get(input_text, thread_id)
         if entry is None:
-            entry = await cache.semantic.get(input_text, thread_id)
+            entry = await main.cache.semantic.get(input_text, thread_id)
 
         if entry is not None:
             logger.info(
@@ -119,7 +120,7 @@ async def chat(request: Request, body: ChatRequest):  # pylint: disable=unused-a
                 extra={'thread_id': thread_id},
             )
 
-            metrics.record_request(
+            main.metrics.record_request(
                 cache_hit=True,
                 error=False,
                 latency_ms=0,
@@ -145,15 +146,15 @@ async def chat(request: Request, body: ChatRequest):  # pylint: disable=unused-a
         model_used = output.get('model_used', settings.primary_model)
 
         # 4. Output validation
-        output_result = security.check_output(output_text)
+        output_result = main.security.check_output(output_text)
         if output_result.reason:
             security_notes.append(output_result.reason)
 
         # 5. Cache response
-        await cache.hash.set(
+        await main.cache.hash.set(
             query=input_text, thread_id=thread_id, response=output_text
         )
-        await cache.semantic.set(
+        await main.cache.semantic.set(
             query=input_text, thread_id=thread_id, response=output_text
         )
 

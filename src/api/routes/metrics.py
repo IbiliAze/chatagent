@@ -2,13 +2,17 @@
 
 from dataclasses import asdict
 
-from api.main import app, metrics
+from fastapi import APIRouter
+
+from api import main
 from api.models.metrics import MetricsResponse
 
+router = APIRouter()
 
-@app.get('/metrics', response_model=MetricsResponse)
+
+@router.get('/metrics', response_model=MetricsResponse)
 async def metrics_summary():
     """Get metrics summary"""
 
-    summary = metrics.get_summary()
+    summary = main.metrics.get_summary()
     return MetricsResponse(**asdict(summary))

@@ -1,12 +1,15 @@
 """Health check endpoint."""
 
+from fastapi import APIRouter
+
 from api import main
-from api.main import app
 from api.models.health import HealthResponse
 from core.config.settings import get_settings
 
+router = APIRouter()
 
-@app.get('/health', response_model=HealthResponse)
+
+@router.get('/health', response_model=HealthResponse)
 async def health():
     """Get health"""
 
