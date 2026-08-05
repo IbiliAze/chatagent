@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import ExitStack, asynccontextmanager, suppress
+from dataclasses import dataclass
 
 from fastapi import FastAPI, Request
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -26,6 +27,20 @@ from core.config.settings import get_settings
 from core.logging.logger import logger
 from core.models.models import Models
 from core.store.vectorstore.opensearch import OpenSearch
+
+
+@dataclass(frozen=True)
+class AvailableCache:
+  """The caches the app exposes, assembled at startup."""
+
+  semantic: SemanticCache
+  hash: HashCache
+
+
+# Bound by lifespan(), so it exists only once startup has run. Modules that need
+# it must reach through the module (main.cache) at request time rather than
+# importing the name, which would raise ImportError at import time.
+cache: AvailableCache
 
 
 @asynccontextmanager
@@ -74,11 +89,10 @@ async def lifespan(app: FastAPI):
   tool_list = tools.load_tools()
   nodes = ResearcherNodes(models=models, tools=tool_list)
 
-  class AvailableCache:
-    semantic = SemanticCache(vectorstore=opensearch.cache_vectorstore)
-    hash = HashCache()
-
-  cache = AvailableCache()
+  cache = AvailableCache(
+    semantic=SemanticCache(vectorstore=opensearch.cache_vectorstore),
+    hash=HashCache(),
+  )
   metrics = MetricsCollector()
 
   # from_conn_string is a context manager: it must stay open for the lifetime of

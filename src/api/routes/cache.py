@@ -1,10 +1,13 @@
-from api.main import app, cache
+from api import main
+from api.main import app
+from api.models.cache import CacheResponse
 
 
-@app.post(
-  '/cache/stats',
-)
-async def cache_stats():
+@app.post('/cache/stats', response_model=CacheResponse)
+async def cache_stats() -> CacheResponse:
   """Get cache stats"""
 
-  return cache.get_stats()
+  return CacheResponse(
+    semantic=await main.cache.semantic.get_stats(),
+    hash=await main.cache.hash.get_stats(),
+  )

@@ -1,13 +1,19 @@
 import pytest
 
 from app.security.output_validator import OutputValidator
+from app.security.pii_detector.pii_detector import PIIDetector
 
 pytestmark = pytest.mark.unit
 
 
 @pytest.fixture
-def output_validator() -> OutputValidator:
-  return OutputValidator()
+def pii_detector() -> PIIDetector:
+  return PIIDetector()
+
+
+@pytest.fixture
+def output_validator(pii_detector: PIIDetector) -> OutputValidator:
+  return OutputValidator(pii_detector=pii_detector)
 
 
 class TestInvalidOutput:
