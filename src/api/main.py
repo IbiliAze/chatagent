@@ -2,14 +2,18 @@
 
 import asyncio
 from contextlib import ExitStack, asynccontextmanager, suppress
-from dataclasses import dataclass
 
 from fastapi import FastAPI, Request
 from langgraph.checkpoint.sqlite import SqliteSaver
-from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 
+from api.dependencies import AvailableCache
+from api.limiter import limiter
+from api.routes.cache import router as cache_router
+from api.routes.chat import router as chat_router
+from api.routes.health import router as health_router
+from api.routes.knowledge import router as knowledge_router
+from api.routes.metrics import router as metrics_router
 from app.agents.researcher.agent import ResearcherAgent
 from app.agents.researcher.nodes import ResearcherNodes
 from app.agents.researcher.routes import ResearcherRoutes
@@ -31,26 +35,9 @@ from core.logging.logger import logger
 from core.models.models import Models
 from core.store.vectorstore.opensearch import OpenSearch
 
-
-@dataclass(frozen=True)
-class AvailableCache:
-    """The caches the app exposes, assembled at startup."""
-
-    semantic: SemanticCache
-    hash: HashCache
-
-
-# Bound by lifespan(), so they exist only once startup has run. Modules that need
-# them must reach through the module (main.cache) at request time rather than
-# importing the name, which would raise ImportError at import time.
 opensearch = OpenSearch()
 opensearch.provision_indexes(embedding_dimension=1536)
 rag = Rag(opensearch.document_vectorstore)
-cache: AvailableCache
-security: SecurityPipeline
-metrics: MetricsCollector
-agent: ResearcherAgent
-token_budget: TokenBudget
 
 
 def _build_security_pipeline(models: Models) -> SecurityPipeline:
@@ -75,10 +62,8 @@ def _build_agent(
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # pylint: disable=unused-argument
-    """Initialise all components."""
-
-    global security, cache, metrics, agent, token_budget  # pylint: disable=global-statement
+async def lifespan(app: FastAPI):
+    """Initialise all components and hang them off `app.state` for routes to read."""
 
     settings = get_settings()
 
@@ -97,25 +82,28 @@ async def lifespan(app: FastAPI):  # pylint: disable=unused-argument
     models = Models()
     mcp_client = McpClient(name='eightmile')
 
-    token_budget = TokenBudget()
-    security = _build_security_pipeline(models)
+    app.state.rag = rag
+    app.state.token_budget = TokenBudget()
+    app.state.security = _build_security_pipeline(models)
 
     db_path = 'checkpoints.db'
 
-    cache = AvailableCache(
+    app.state.cache = AvailableCache(
         semantic=SemanticCache(vectorstore=opensearch.cache_vectorstore),
         hash=HashCache(),
     )
-    metrics = MetricsCollector()
+    app.state.metrics = MetricsCollector()
 
     # from_conn_string is a context manager: it must stay open for the lifetime of
     # the app, otherwise the underlying sqlite connection is closed under the agent.
     with ExitStack() as stack:
         saver = stack.enter_context(SqliteSaver.from_conn_string(db_path))
         saver.setup()
-        agent = _build_agent(models=models, rag=rag, mcp_client=mcp_client, saver=saver)
+        app.state.agent = _build_agent(
+            models=models, rag=rag, mcp_client=mcp_client, saver=saver
+        )
 
-        maintenance = asyncio.create_task(cache.semantic.maintenance())
+        maintenance = asyncio.create_task(app.state.cache.semantic.maintenance())
 
         logger.info('All components initialised')
 
@@ -130,14 +118,15 @@ async def lifespan(app: FastAPI):  # pylint: disable=unused-argument
             # Flush here rather than from the task's cancel handler, where a second
             # cancellation or interpreter teardown can interrupt the await.
             try:
-                await cache.semantic.run_maintenance_once()
+                await app.state.cache.semantic.run_maintenance_once()
             except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception('Final cache maintenance failed')
 
-            logger.info('Shutting down...', extra={'extra_data': metrics.get_summary()})
+            logger.info(
+                'Shutting down...', extra={'extra_data': app.state.metrics.get_summary()}
+            )
 
 
-limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title='ChatAgent API',
     description='Fast API for ChatAgent',
@@ -146,22 +135,15 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 
+app.include_router(chat_router)
+app.include_router(health_router)
+app.include_router(metrics_router)
+app.include_router(cache_router)
+app.include_router(knowledge_router)
+
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(  # pylint: disable=unused-argument
     request: Request, exc: RateLimitExceeded
 ):
     """Handle requests that exceed the rate limit."""
-
-
-# Imported down here, after `app` and `limiter` exist, since the route modules
-# reach back into this module for them at decoration/request time.
-from api.routes.cache import router as cache_router  # noqa: E402  pylint: disable=wrong-import-position
-from api.routes.chat import router as chat_router  # noqa: E402  pylint: disable=wrong-import-position
-from api.routes.health import router as health_router  # noqa: E402  pylint: disable=wrong-import-position
-from api.routes.metrics import router as metrics_router  # noqa: E402  pylint: disable=wrong-import-position
-
-app.include_router(chat_router)
-app.include_router(health_router)
-app.include_router(metrics_router)
-app.include_router(cache_router)

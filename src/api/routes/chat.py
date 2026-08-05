@@ -5,9 +5,13 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
 from langsmith import traceable  # pyright: ignore[reportUnknownVariableType]
 
-from api import main
+from api.dependencies import AgentDep, CacheDep, MetricsDep, SecurityDep, TokenBudgetDep
+from api.limiter import limiter
 from api.models.chat import ChatRequest, ChatResponse
+from app.agents.researcher.agent import ResearcherAgent
 from app.agents.researcher.state import ResearcherState
+from app.cost_optimisation.token_budget import TokenBudget
+from app.observability.metrics_collector import MetricsCollector
 from app.observability.request_timer import RequestTimer
 from core.config.settings import get_settings
 from core.config.types import AvailableModels
@@ -17,12 +21,17 @@ settings = get_settings()
 router = APIRouter()
 
 
-def _invoke_agent(thread_id: str, input_text: str) -> ResearcherState:
+def _invoke_agent(
+    agent: ResearcherAgent,
+    metrics: MetricsCollector,
+    thread_id: str,
+    input_text: str,
+) -> ResearcherState:
     """Run the agent, converting failures into a 500 with recorded metrics."""
     try:
-        config = main.agent.build_config(thread_id=thread_id)
-        state = main.agent.build_message(text=input_text)
-        return main.agent.process_message(state=state, config=config)
+        config = agent.build_config(thread_id=thread_id)
+        state = agent.build_message(text=input_text)
+        return agent.process_message(state=state, config=config)
 
     except Exception as e:
         logger.error(
@@ -31,7 +40,7 @@ def _invoke_agent(thread_id: str, input_text: str) -> ResearcherState:
             extra={'error': str(e), 'thread_id': thread_id},
         )
 
-        main.metrics.record_request(
+        metrics.record_request(
             cache_hit=False,
             error=True,
             latency_ms=0,
@@ -45,7 +54,9 @@ def _invoke_agent(thread_id: str, input_text: str) -> ResearcherState:
         ) from e
 
 
-def _finalize_metrics(
+def _finalize_metrics(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    metrics: MetricsCollector,
+    token_budget: TokenBudget,
     input_text: str,
     output_text: str,
     model_used: AvailableModels,
@@ -53,9 +64,9 @@ def _finalize_metrics(
     timer: RequestTimer,
 ) -> None:
     """Record token usage and latency, and log request completion."""
-    input_tokens = main.token_budget.estimate_tokens(text=input_text, model=model_used)
-    output_tokens = main.token_budget.estimate_tokens(text=output_text, model=model_used)
-    main.metrics.record_request(
+    input_tokens = token_budget.estimate_tokens(text=input_text, model=model_used)
+    output_tokens = token_budget.estimate_tokens(text=output_text, model=model_used)
+    metrics.record_request(
         latency_ms=timer.elapsed_ms,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
@@ -73,11 +84,19 @@ def _finalize_metrics(
 
 
 @router.post('/chat', response_model=ChatResponse)
-@main.limiter.limit(  # pyright: ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
+@limiter.limit(  # pyright: ignore[reportUntypedFunctionDecorator, reportUnknownMemberType]
     settings.rate_limit
 )
 @traceable(name='chat_endpoint')
-async def chat(request: Request, body: ChatRequest):  # pylint: disable=unused-argument
+async def chat(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+    request: Request,  # pylint: disable=unused-argument
+    body: ChatRequest,
+    agent: AgentDep,
+    cache: CacheDep,
+    security: SecurityDep,
+    metrics: MetricsDep,
+    token_budget: TokenBudgetDep,
+):
     """Main chat endpoint."""
 
     with RequestTimer() as timer:
@@ -85,7 +104,7 @@ async def chat(request: Request, body: ChatRequest):  # pylint: disable=unused-a
         security_notes: list[str] = []
 
         # 1. Security check
-        input_result = main.security.check_input(body.message)
+        input_result = security.check_input(body.message)
         security_notes.extend(input_result.security_notes)
 
         if not input_result.is_allowed:
@@ -94,7 +113,7 @@ async def chat(request: Request, body: ChatRequest):  # pylint: disable=unused-a
                 extra={'reason': input_result.security_notes, 'thread_id': thread_id},
             )
 
-            main.metrics.record_request(
+            metrics.record_request(
                 latency_ms=0,
                 error=True,
                 cache_hit=False,
@@ -110,9 +129,9 @@ async def chat(request: Request, body: ChatRequest):  # pylint: disable=unused-a
         input_text = input_result.cleaned_text
 
         # 2. Cache lookup
-        entry = await main.cache.hash.get(input_text, thread_id)
+        entry = await cache.hash.get(input_text, thread_id)
         if entry is None:
-            entry = await main.cache.semantic.get(input_text, thread_id)
+            entry = await cache.semantic.get(input_text, thread_id)
 
         if entry is not None:
             logger.info(
@@ -120,7 +139,7 @@ async def chat(request: Request, body: ChatRequest):  # pylint: disable=unused-a
                 extra={'thread_id': thread_id},
             )
 
-            main.metrics.record_request(
+            metrics.record_request(
                 cache_hit=True,
                 error=False,
                 latency_ms=0,
@@ -140,26 +159,26 @@ async def chat(request: Request, body: ChatRequest):  # pylint: disable=unused-a
             )
 
         # 3. Invoke the agent
-        output = _invoke_agent(thread_id, input_text)
+        output = _invoke_agent(agent, metrics, thread_id, input_text)
 
         output_text = str(output['messages'][-1])
         model_used = output.get('model_used', settings.primary_model)
 
         # 4. Output validation
-        output_result = main.security.check_output(output_text)
+        output_result = security.check_output(output_text)
         if output_result.reason:
             security_notes.append(output_result.reason)
 
         # 5. Cache response
-        await main.cache.hash.set(
+        await cache.hash.set(
             query=input_text, thread_id=thread_id, response=output_text
         )
-        await main.cache.semantic.set(
+        await cache.semantic.set(
             query=input_text, thread_id=thread_id, response=output_text
         )
 
     # 6. Log and record metrics
-    _finalize_metrics(input_text, output_text, model_used, thread_id, timer)
+    _finalize_metrics(metrics, token_budget, input_text, output_text, model_used, thread_id, timer)
 
     return ChatResponse(
         model_used=model_used,

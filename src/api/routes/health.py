@@ -1,8 +1,7 @@
 """Health check endpoint."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
-from api import main
 from api.models.health import HealthResponse
 from core.config.settings import get_settings
 
@@ -10,15 +9,15 @@ router = APIRouter()
 
 
 @router.get('/health', response_model=HealthResponse)
-async def health():
+async def health(request: Request):
     """Get health"""
 
     settings = get_settings()
 
     checks = {
-        'agent': hasattr(main, 'agent'),
-        'security': hasattr(main, 'security'),
-        'cache': hasattr(main, 'cache'),
+        'agent': hasattr(request.app.state, 'agent'),
+        'security': hasattr(request.app.state, 'security'),
+        'cache': hasattr(request.app.state, 'cache'),
     }
 
     all_healthy = all(checks.values())

@@ -1,13 +1,15 @@
 """RAG knowledge base endpoint."""
 
-from fastapi import Request
+from fastapi import APIRouter
 
-from api.main import app, rag
+from api.dependencies import RagDep
 from api.models.knowledge import KnowledgeAddedRequest, KnowledgeAddedResponse
 
+router = APIRouter()
 
-@app.post('/knowledge', response_model=KnowledgeAddedResponse)
-async def add_knowledge(request: Request, body: KnowledgeAddedRequest):  # pylint: disable=unused-argument
+
+@router.post('/knowledge', response_model=KnowledgeAddedResponse)
+async def add_knowledge(rag: RagDep, body: KnowledgeAddedRequest):
     """Add to knowledge base"""
 
     chunks = rag.add_texts(texts=body.texts, source=body.source)
