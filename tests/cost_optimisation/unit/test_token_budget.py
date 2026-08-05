@@ -9,8 +9,7 @@ from app.cost_optimisation.token_budget import (
 
 @pytest.fixture
 def token_budget() -> TokenBudget:
-  token_budget = TokenBudget(max_tokens_per_request=100)
-  return token_budget
+  return TokenBudget(max_tokens_per_request=100)
 
 
 class TestEstimation:
