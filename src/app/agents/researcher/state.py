@@ -9,37 +9,37 @@ from core.config.types import AvailableModels
 
 
 class ResearcherState(TypedDict):
-  messages: Annotated[list[BaseMessage], add_messages]
-  current_agent: ResearcherAgent | None
-  handoff_reason: str
-  context_summary: str
-  error: NotRequired[str | None]
-  retry_count: NotRequired[int]
-  model_used: NotRequired[AvailableModels]
+    messages: Annotated[list[BaseMessage], add_messages]
+    current_agent: ResearcherAgent | None
+    handoff_reason: str
+    context_summary: str
+    error: NotRequired[str | None]
+    retry_count: NotRequired[int]
+    model_used: NotRequired[AvailableModels]
 
 
 class ResearchUpdate(TypedDict):
-  messages: list[BaseMessage]
-  model_used: AvailableModels
+    messages: list[BaseMessage]
+    model_used: AvailableModels
 
 
 class TriageUpdate(TypedDict):
-  current_agent: ResearcherAgent
-  handoff_reason: str
-  context_summary: str
-  model_used: NotRequired[AvailableModels]
-  messages: list[BaseMessage]
+    current_agent: ResearcherAgent
+    handoff_reason: str
+    context_summary: str
+    model_used: NotRequired[AvailableModels]
+    messages: list[BaseMessage]
 
 
 class SpecialistUpdate(TypedDict):
-  messages: Annotated[list[BaseMessage], add_messages]
-  current_agent: ResearcherAgent
-  model_used: AvailableModels
+    messages: Annotated[list[BaseMessage], add_messages]
+    current_agent: ResearcherAgent
+    model_used: AvailableModels
 
 
 @dataclass
 class ResearcherResponse:
-  message: BaseMessage
-  model_used: str
-  current_agent: str
-  handoff_reason: str | None
+    message: BaseMessage
+    model_used: str
+    current_agent: str
+    handoff_reason: str | None

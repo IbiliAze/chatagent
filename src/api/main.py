@@ -32,10 +32,10 @@ from core.store.vectorstore.opensearch import OpenSearch
 
 @dataclass(frozen=True)
 class AvailableCache:
-  """The caches the app exposes, assembled at startup."""
+    """The caches the app exposes, assembled at startup."""
 
-  semantic: SemanticCache
-  hash: HashCache
+    semantic: SemanticCache
+    hash: HashCache
 
 
 # Bound by lifespan(), so it exists only once startup has run. Modules that need
@@ -46,96 +46,96 @@ cache: AvailableCache
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-  """Initialise all components."""
+    """Initialise all components."""
 
-  global security, cache, metrics, agent, token_budget
+    global security, cache, metrics, agent, token_budget
 
-  settings = get_settings()
+    settings = get_settings()
 
-  logger.info(
-    'Starting API',
-    extra={
-      'extra_data': {
-        'environment': settings.app_env,
-        'primary_model': settings.primary_model,
-        'fallback_model': settings.fallback_model,
-        'tracing_enabled': settings.langchain_tracing_v2,
-      }
-    },
-  )
+    logger.info(
+        'Starting API',
+        extra={
+            'extra_data': {
+                'environment': settings.app_env,
+                'primary_model': settings.primary_model,
+                'fallback_model': settings.fallback_model,
+                'tracing_enabled': settings.langchain_tracing_v2,
+            }
+        },
+    )
 
-  models = Models()
+    models = Models()
 
-  mcp_client = McpClient(name='eightmile')
+    mcp_client = McpClient(name='eightmile')
 
-  token_budget = TokenBudget()
-  input_sanitiser = InputSanitiser()
-  pii_detector = PIIDetector()
-  language_detector = LanguageDetector()
-  security_guard = SecurityGuard(llm=models.primary_llm)
-  output_validator = OutputValidator(pii_detector=pii_detector)
-  security = SecurityPipeline(
-    pii_detector=pii_detector,
-    output_validator=output_validator,
-    security_guard=security_guard,
-    input_sanitiser=input_sanitiser,
-    language_detector=language_detector,
-  )
-  opensearch = OpenSearch()
-  opensearch.provision_indexes(embedding_dimension=1536)
-  rag = Rag(opensearch.document_vectorstore)
+    token_budget = TokenBudget()
+    input_sanitiser = InputSanitiser()
+    pii_detector = PIIDetector()
+    language_detector = LanguageDetector()
+    security_guard = SecurityGuard(llm=models.primary_llm)
+    output_validator = OutputValidator(pii_detector=pii_detector)
+    security = SecurityPipeline(
+        pii_detector=pii_detector,
+        output_validator=output_validator,
+        security_guard=security_guard,
+        input_sanitiser=input_sanitiser,
+        language_detector=language_detector,
+    )
+    opensearch = OpenSearch()
+    opensearch.provision_indexes(embedding_dimension=1536)
+    rag = Rag(opensearch.document_vectorstore)
 
-  db_path = 'checkpoints.db'
-  routes = ResearcherRoutes()
-  tools = ResearcherTools(rag=rag, mcp_client=mcp_client)
-  tool_list = tools.load_tools()
-  nodes = ResearcherNodes(models=models, tools=tool_list)
+    db_path = 'checkpoints.db'
+    routes = ResearcherRoutes()
+    tools = ResearcherTools(rag=rag, mcp_client=mcp_client)
+    tool_list = tools.load_tools()
+    nodes = ResearcherNodes(models=models, tools=tool_list)
 
-  cache = AvailableCache(
-    semantic=SemanticCache(vectorstore=opensearch.cache_vectorstore),
-    hash=HashCache(),
-  )
-  metrics = MetricsCollector()
+    cache = AvailableCache(
+        semantic=SemanticCache(vectorstore=opensearch.cache_vectorstore),
+        hash=HashCache(),
+    )
+    metrics = MetricsCollector()
 
-  # from_conn_string is a context manager: it must stay open for the lifetime of
-  # the app, otherwise the underlying sqlite connection is closed under the agent.
-  with ExitStack() as stack:
-    saver = stack.enter_context(SqliteSaver.from_conn_string(db_path))
-    saver.setup()
-    agent = ResearcherAgent(nodes=nodes, routes=routes, saver=saver)
+    # from_conn_string is a context manager: it must stay open for the lifetime of
+    # the app, otherwise the underlying sqlite connection is closed under the agent.
+    with ExitStack() as stack:
+        saver = stack.enter_context(SqliteSaver.from_conn_string(db_path))
+        saver.setup()
+        agent = ResearcherAgent(nodes=nodes, routes=routes, saver=saver)
 
-    maintenance = asyncio.create_task(cache.semantic.maintenance())
+        maintenance = asyncio.create_task(cache.semantic.maintenance())
 
-    logger.info('All components initialised')
+        logger.info('All components initialised')
 
-    try:
-      yield
-    finally:
-      maintenance.cancel()
+        try:
+            yield
+        finally:
+            maintenance.cancel()
 
-      with suppress(asyncio.CancelledError):
-        await maintenance
+            with suppress(asyncio.CancelledError):
+                await maintenance
 
-      # Flush here rather than from the task's cancel handler, where a second
-      # cancellation or interpreter teardown can interrupt the await.
-      try:
-        await cache.semantic.run_maintenance_once()
-      except Exception:
-        logger.exception('Final cache maintenance failed')
+            # Flush here rather than from the task's cancel handler, where a second
+            # cancellation or interpreter teardown can interrupt the await.
+            try:
+                await cache.semantic.run_maintenance_once()
+            except Exception:
+                logger.exception('Final cache maintenance failed')
 
-      logger.info('Shutting down...', extra={'extra_data': metrics.get_summary()})
+            logger.info('Shutting down...', extra={'extra_data': metrics.get_summary()})
 
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
-  title='ChatAgent API',
-  description='Fast API for ChatAgent',
-  version='0.1.0',
-  lifespan=lifespan,
+    title='ChatAgent API',
+    description='Fast API for ChatAgent',
+    version='0.1.0',
+    lifespan=lifespan,
 )
 app.state.limiter = limiter
 
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
-  pass
+    pass

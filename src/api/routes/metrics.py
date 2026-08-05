@@ -6,7 +6,7 @@ from api.models.metrics import MetricsResponse
 
 @app.post('/metrics', response_model=MetricsResponse)
 async def metrics_summary():
-  """Get metrics summary"""
+    """Get metrics summary"""
 
-  summary = metrics.get_summary()
-  return MetricsResponse(**asdict(summary))
+    summary = metrics.get_summary()
+    return MetricsResponse(**asdict(summary))

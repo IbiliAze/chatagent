@@ -10,181 +10,181 @@ type IndexMapping = dict[str, Any]
 
 
 class OpenSearch:
-  VECTOR_FIELD = 'vector_field'
-  TEXT_FIELD = 'text'
-  METADATA_FIELD = 'metadata'
+    VECTOR_FIELD = 'vector_field'
+    TEXT_FIELD = 'text'
+    METADATA_FIELD = 'metadata'
 
-  def __init__(self) -> None:
-    settings = get_settings()
-    models = Models()
+    def __init__(self) -> None:
+        settings = get_settings()
+        models = Models()
 
-    auth = (
-      (settings.opensearch_user, settings.opensearch_password)
-      if settings.opensearch_user
-      else None
-    )
+        auth = (
+            (settings.opensearch_user, settings.opensearch_password)
+            if settings.opensearch_user
+            else None
+        )
 
-    self.client = OpenSearchClient(
-      hosts=[settings.opensearch_url],
-      http_auth=auth,
-    )
+        self.client = OpenSearchClient(
+            hosts=[settings.opensearch_url],
+            http_auth=auth,
+        )
 
-    self.embedding_model = models.embedding_llm
+        self.embedding_model = models.embedding_llm
 
-    self.document_index = settings.opensearch_documents_index
-    self.cache_index = settings.opensearch_cache_index
+        self.document_index = settings.opensearch_documents_index
+        self.cache_index = settings.opensearch_cache_index
 
-    self.document_vectorstore = OpenSearchVectorSearch(
-      opensearch_url=settings.opensearch_url,
-      index_name=self.document_index,
-      embedding_function=self.embedding_model,
-      http_auth=auth,
-    )
+        self.document_vectorstore = OpenSearchVectorSearch(
+            opensearch_url=settings.opensearch_url,
+            index_name=self.document_index,
+            embedding_function=self.embedding_model,
+            http_auth=auth,
+        )
 
-    self.cache_vectorstore = OpenSearchVectorSearch(
-      opensearch_url=settings.opensearch_url,
-      index_name=self.cache_index,
-      embedding_function=self.embedding_model,
-      http_auth=auth,
-    )
+        self.cache_vectorstore = OpenSearchVectorSearch(
+            opensearch_url=settings.opensearch_url,
+            index_name=self.cache_index,
+            embedding_function=self.embedding_model,
+            http_auth=auth,
+        )
 
-  def provision_indexes(self, embedding_dimension: int) -> None:
-    """Create all required OpenSearch indexes when missing."""
-    self._create_index_if_missing(
-      index_name=self.document_index,
-      mapping=self._document_index_mapping(embedding_dimension),
-    )
+    def provision_indexes(self, embedding_dimension: int) -> None:
+        """Create all required OpenSearch indexes when missing."""
+        self._create_index_if_missing(
+            index_name=self.document_index,
+            mapping=self._document_index_mapping(embedding_dimension),
+        )
 
-    self._create_index_if_missing(
-      index_name=self.cache_index,
-      mapping=self._cache_index_mapping(embedding_dimension),
-    )
+        self._create_index_if_missing(
+            index_name=self.cache_index,
+            mapping=self._cache_index_mapping(embedding_dimension),
+        )
 
-  def _create_index_if_missing(
-    self,
-    index_name: str,
-    mapping: IndexMapping,
-  ) -> None:
-    if self.client.indices.exists(index=index_name):
-      return
+    def _create_index_if_missing(
+        self,
+        index_name: str,
+        mapping: IndexMapping,
+    ) -> None:
+        if self.client.indices.exists(index=index_name):
+            return
 
-    self.client.indices.create(
-      index=index_name,
-      body=mapping,
-    )
+        self.client.indices.create(
+            index=index_name,
+            body=mapping,
+        )
 
-  @classmethod
-  def _document_index_mapping(
-    cls,
-    embedding_dimension: int,
-  ) -> IndexMapping:
-    return {
-      'settings': {
-        'index': {
-          'knn': True,
-          'number_of_shards': 1,
-          'number_of_replicas': 0,
-        },
-      },
-      'mappings': {
-        'dynamic': 'strict',
-        'properties': {
-          cls.VECTOR_FIELD: cls._vector_mapping(embedding_dimension),
-          cls.TEXT_FIELD: {
-            'type': 'text',
-          },
-          cls.METADATA_FIELD: {
-            'type': 'object',
-            'properties': {
-              'source': {
-                'type': 'keyword',
-              },
-              'indexed_at': {
-                'type': 'date',
-              },
-              'document_id': {
-                'type': 'keyword',
-              },
-              'page': {
-                'type': 'integer',
-              },
-              'chunk_index': {
-                'type': 'integer',
-              },
-              'title': {
-                'type': 'text',
-                'fields': {
-                  'keyword': {
-                    'type': 'keyword',
-                  },
+    @classmethod
+    def _document_index_mapping(
+        cls,
+        embedding_dimension: int,
+    ) -> IndexMapping:
+        return {
+            'settings': {
+                'index': {
+                    'knn': True,
+                    'number_of_shards': 1,
+                    'number_of_replicas': 0,
                 },
-              },
             },
-          },
-        },
-      },
-    }
-
-  @classmethod
-  def _cache_index_mapping(
-    cls,
-    embedding_dimension: int,
-  ) -> IndexMapping:
-    return {
-      'settings': {
-        'index': {
-          'knn': True,
-          'number_of_shards': 1,
-          'number_of_replicas': 0,
-        },
-      },
-      'mappings': {
-        'dynamic': 'strict',
-        'properties': {
-          cls.VECTOR_FIELD: cls._vector_mapping(embedding_dimension),
-          cls.TEXT_FIELD: {
-            'type': 'text',
-          },
-          cls.METADATA_FIELD: {
-            'type': 'object',
-            'properties': {
-              'query': {
-                'type': 'text',
-              },
-              'response': {
-                'type': 'text',
-                'index': False,
-              },
-              'thread_id': {
-                'type': 'keyword',
-              },
-              'timestamp': {
-                'type': 'long',
-              },
-              'hits': {
-                'type': 'integer',
-              },
+            'mappings': {
+                'dynamic': 'strict',
+                'properties': {
+                    cls.VECTOR_FIELD: cls._vector_mapping(embedding_dimension),
+                    cls.TEXT_FIELD: {
+                        'type': 'text',
+                    },
+                    cls.METADATA_FIELD: {
+                        'type': 'object',
+                        'properties': {
+                            'source': {
+                                'type': 'keyword',
+                            },
+                            'indexed_at': {
+                                'type': 'date',
+                            },
+                            'document_id': {
+                                'type': 'keyword',
+                            },
+                            'page': {
+                                'type': 'integer',
+                            },
+                            'chunk_index': {
+                                'type': 'integer',
+                            },
+                            'title': {
+                                'type': 'text',
+                                'fields': {
+                                    'keyword': {
+                                        'type': 'keyword',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             },
-          },
-        },
-      },
-    }
+        }
 
-  @classmethod
-  def _vector_mapping(
-    cls,
-    embedding_dimension: int,
-  ) -> IndexMapping:
-    return {
-      'type': 'knn_vector',
-      'dimension': embedding_dimension,
-      'method': {
-        'name': 'hnsw',
-        'engine': 'lucene',
-        'space_type': 'cosinesimil',
-        'parameters': {
-          'ef_construction': 128,
-          'm': 16,
-        },
-      },
-    }
+    @classmethod
+    def _cache_index_mapping(
+        cls,
+        embedding_dimension: int,
+    ) -> IndexMapping:
+        return {
+            'settings': {
+                'index': {
+                    'knn': True,
+                    'number_of_shards': 1,
+                    'number_of_replicas': 0,
+                },
+            },
+            'mappings': {
+                'dynamic': 'strict',
+                'properties': {
+                    cls.VECTOR_FIELD: cls._vector_mapping(embedding_dimension),
+                    cls.TEXT_FIELD: {
+                        'type': 'text',
+                    },
+                    cls.METADATA_FIELD: {
+                        'type': 'object',
+                        'properties': {
+                            'query': {
+                                'type': 'text',
+                            },
+                            'response': {
+                                'type': 'text',
+                                'index': False,
+                            },
+                            'thread_id': {
+                                'type': 'keyword',
+                            },
+                            'timestamp': {
+                                'type': 'long',
+                            },
+                            'hits': {
+                                'type': 'integer',
+                            },
+                        },
+                    },
+                },
+            },
+        }
+
+    @classmethod
+    def _vector_mapping(
+        cls,
+        embedding_dimension: int,
+    ) -> IndexMapping:
+        return {
+            'type': 'knn_vector',
+            'dimension': embedding_dimension,
+            'method': {
+                'name': 'hnsw',
+                'engine': 'lucene',
+                'space_type': 'cosinesimil',
+                'parameters': {
+                    'ef_construction': 128,
+                    'm': 16,
+                },
+            },
+        }

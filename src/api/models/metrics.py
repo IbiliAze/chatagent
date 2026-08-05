@@ -2,12 +2,12 @@ from pydantic import BaseModel
 
 
 class MetricsResponse(BaseModel):
-  """Metrics endpoint response"""
+    """Metrics endpoint response"""
 
-  total_requests: int
-  total_errors: int
-  error_rate: float
-  avg_latency_ms: float
-  cache_hit_rate: float
-  total_input_tokens: int
-  total_output_tokens: int
+    total_requests: int
+    total_errors: int
+    error_rate: float
+    avg_latency_ms: float
+    cache_hit_rate: float
+    total_input_tokens: int
+    total_output_tokens: int

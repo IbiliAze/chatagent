@@ -20,21 +20,21 @@ it to sales instead so it can be looked up."""
 
 
 def SALES_AGENT_PROMPT(context: str):
-  return f"""You are a sales specicialist. Context from triage {context}.
+    return f"""You are a sales specicialist. Context from triage {context}.
   
   Help the customer with product or service purchases and questions.
   Be helpful and informative. Do not be pushy."""
 
 
 def SUPPORT_AGENT_PROMPT(context: str):
-  return f"""You are a technical support specicialist. Context from triage {context}.
+    return f"""You are a technical support specicialist. Context from triage {context}.
   
   Help the customer with technical issues.
   Provide step-by-step guidence."""
 
 
 def BILLING_AGENT_PROMPT(context: str):
-  return f"""You are a billing specicialist. Context from triage {context}.
+    return f"""You are a billing specicialist. Context from triage {context}.
   
   Help the customer with billing questions.
   Be clear about policies and next steps."""

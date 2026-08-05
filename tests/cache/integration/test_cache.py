@@ -17,216 +17,218 @@ pytestmark = pytest.mark.integration
 
 @pytest.fixture
 def vector_store() -> OpenSearchVectorSearch:
-  opensearch = OpenSearch()
-  opensearch.provision_indexes(embedding_dimension=1536)
-  return opensearch.cache_vectorstore
+    opensearch = OpenSearch()
+    opensearch.provision_indexes(embedding_dimension=1536)
+    return opensearch.cache_vectorstore
 
 
 @pytest.fixture
 def semantic_cache(vector_store: OpenSearchVectorSearch) -> SemanticCache:
-  return SemanticCache(
-    vectorstore=vector_store,  # pyright: ignore[reportArgumentType]
-    score_threshold=0.95,
-    ttl_seconds=300,
-    max_entries=3,
-  )
+    return SemanticCache(
+        vectorstore=vector_store,  # pyright: ignore[reportArgumentType]
+        score_threshold=0.95,
+        ttl_seconds=300,
+        max_entries=3,
+    )
 
 
 @pytest.fixture
 def hash_cache() -> HashCache:
-  return HashCache(ttl_seconds=300, max_entries=3)
+    return HashCache(ttl_seconds=300, max_entries=3)
 
 
 @pytest.fixture(params=['semantic_cache', 'hash_cache'])
 async def cache(request: pytest.FixtureRequest) -> AsyncIterator[Cache]:
-  """Run every test in this module against both cache implementations.
+    """Run every test in this module against both cache implementations.
 
-  parametrize takes plain values, so listing the fixture functions there would
-  hand the test the function objects rather than the caches they build.
-  getfixturevalue is what resolves a fixture by name at run time.
+    parametrize takes plain values, so listing the fixture functions there would
+    hand the test the function objects rather than the caches they build.
+    getfixturevalue is what resolves a fixture by name at run time.
 
-  A fresh HashCache is built per test, but SemanticCache shares one OpenSearch
-  index across the whole run, so it has to be emptied on the way in.
-  """
-  cache = cast(Cache, request.getfixturevalue(request.param))
-  await cache.clear()
-  yield cache
+    A fresh HashCache is built per test, but SemanticCache shares one OpenSearch
+    index across the whole run, so it has to be emptied on the way in.
+    """
+    cache = cast(Cache, request.getfixturevalue(request.param))
+    await cache.clear()
+    yield cache
 
 
 class TestLookup:
-  thread_id: str = 'thrd-1'
+    thread_id: str = 'thrd-1'
 
-  async def test_returns_cached_response(self, cache: Cache) -> None:
-    await cache.set('what is my balance?', self.thread_id, 'your balance is 10')
+    async def test_returns_cached_response(self, cache: Cache) -> None:
+        await cache.set('what is my balance?', self.thread_id, 'your balance is 10')
 
-    assert (
-      await cache.get('what is my balance?', self.thread_id) == 'your balance is 10'
-    )
+        assert (
+            await cache.get('what is my balance?', self.thread_id)
+            == 'your balance is 10'
+        )
 
-  async def test_normalises_case_and_whitespace(self, cache: Cache) -> None:
-    await cache.set('What Is My Balance?', self.thread_id, 'your balance is 10')
+    async def test_normalises_case_and_whitespace(self, cache: Cache) -> None:
+        await cache.set('What Is My Balance?', self.thread_id, 'your balance is 10')
 
-    assert (
-      await cache.get(
-        '  what is my balance?  ',
-        self.thread_id,
-      )
-      == 'your balance is 10'
-    )
+        assert (
+            await cache.get(
+                '  what is my balance?  ',
+                self.thread_id,
+            )
+            == 'your balance is 10'
+        )
 
-  async def test_returns_none_when_missing(self, cache: Cache) -> None:
-    assert (
-      await cache.get(
-        'never asked',
-        self.thread_id,
-      )
-      is None
-    )
+    async def test_returns_none_when_missing(self, cache: Cache) -> None:
+        assert (
+            await cache.get(
+                'never asked',
+                self.thread_id,
+            )
+            is None
+        )
 
-  async def test_overwrites_existing_response(self, cache: Cache) -> None:
-    await cache.set('query', self.thread_id, 'first')
-    await cache.set('query', self.thread_id, 'second')
+    async def test_overwrites_existing_response(self, cache: Cache) -> None:
+        await cache.set('query', self.thread_id, 'first')
+        await cache.set('query', self.thread_id, 'second')
 
-    assert (
-      await cache.get(
-        'query',
-        self.thread_id,
-      )
-      == 'second'
-    )
-    assert (await cache.get_stats()).cached_queries == 1
+        assert (
+            await cache.get(
+                'query',
+                self.thread_id,
+            )
+            == 'second'
+        )
+        assert (await cache.get_stats()).cached_queries == 1
 
 
 class TestExpiry:
-  thread_id: str = 'thrd-1'
+    thread_id: str = 'thrd-1'
 
-  async def test_expired_entry_is_a_miss(self) -> None:
-    cache = HashCache(ttl_seconds=0, max_entries=10)
-    await cache.set('query', self.thread_id, 'response')
+    async def test_expired_entry_is_a_miss(self) -> None:
+        cache = HashCache(ttl_seconds=0, max_entries=10)
+        await cache.set('query', self.thread_id, 'response')
 
-    assert await cache.get('query', self.thread_id) is None
+        assert await cache.get('query', self.thread_id) is None
 
-  async def test_expired_entry_is_dropped_on_read(self) -> None:
-    cache = HashCache(ttl_seconds=0, max_entries=10)
-    await cache.set('query', self.thread_id, 'response')
-    await cache.get('query', self.thread_id)
+    async def test_expired_entry_is_dropped_on_read(self) -> None:
+        cache = HashCache(ttl_seconds=0, max_entries=10)
+        await cache.set('query', self.thread_id, 'response')
+        await cache.get('query', self.thread_id)
 
-    assert len(cache.cache) == 0
+        assert len(cache.cache) == 0
 
-  async def test_purge_expired_removes_entries_without_a_read(self) -> None:
-    cache = HashCache(ttl_seconds=0, max_entries=10)
-    await cache.set('one', self.thread_id, 'a')
-    await cache.set('two', self.thread_id, 'b')
+    async def test_purge_expired_removes_entries_without_a_read(self) -> None:
+        cache = HashCache(ttl_seconds=0, max_entries=10)
+        await cache.set('one', self.thread_id, 'a')
+        await cache.set('two', self.thread_id, 'b')
 
-    assert cache.purge_expired() == 2
-    assert len(cache.cache) == 0
+        assert cache.purge_expired() == 2
+        assert len(cache.cache) == 0
 
-  async def test_stats_exclude_expired_entries(self) -> None:
-    cache = HashCache(ttl_seconds=0, max_entries=10)
-    await cache.set('query', self.thread_id, 'response')
+    async def test_stats_exclude_expired_entries(self) -> None:
+        cache = HashCache(ttl_seconds=0, max_entries=10)
+        await cache.set('query', self.thread_id, 'response')
 
-    assert (await cache.get_stats()).cached_queries == 0
+        assert (await cache.get_stats()).cached_queries == 0
 
 
 class TestHashEviction:
-  """HashCache trims to exactly max_entries on every write."""
+    """HashCache trims to exactly max_entries on every write."""
 
-  thread_id: str = 'thrd-1'
+    thread_id: str = 'thrd-1'
 
-  async def test_never_exceeds_max_entries(self, hash_cache: HashCache) -> None:
-    for i in range(10):
-      await hash_cache.set(f'query {i}', self.thread_id, f'response {i}')
+    async def test_never_exceeds_max_entries(self, hash_cache: HashCache) -> None:
+        for i in range(10):
+            await hash_cache.set(f'query {i}', self.thread_id, f'response {i}')
 
-    assert len(hash_cache) == 3
+        assert len(hash_cache) == 3
 
-  async def test_evicts_least_recently_used(self, hash_cache: HashCache) -> None:
-    await hash_cache.set('a', self.thread_id, 'response a')
-    await hash_cache.set('b', self.thread_id, 'response b')
-    await hash_cache.set('c', self.thread_id, 'response c')
+    async def test_evicts_least_recently_used(self, hash_cache: HashCache) -> None:
+        await hash_cache.set('a', self.thread_id, 'response a')
+        await hash_cache.set('b', self.thread_id, 'response b')
+        await hash_cache.set('c', self.thread_id, 'response c')
 
-    # 'a' becomes the most recently used, so 'b' is next out.
-    await hash_cache.get('a', self.thread_id)
-    await hash_cache.set('d', self.thread_id, 'response d')
+        # 'a' becomes the most recently used, so 'b' is next out.
+        await hash_cache.get('a', self.thread_id)
+        await hash_cache.set('d', self.thread_id, 'response d')
 
-    assert await hash_cache.get('b', self.thread_id) is None
-    assert await hash_cache.get('a', self.thread_id) == 'response a'
-    assert await hash_cache.get('c', self.thread_id) == 'response c'
-    assert await hash_cache.get('d', self.thread_id) == 'response d'
+        assert await hash_cache.get('b', self.thread_id) is None
+        assert await hash_cache.get('a', self.thread_id) == 'response a'
+        assert await hash_cache.get('c', self.thread_id) == 'response c'
+        assert await hash_cache.get('d', self.thread_id) == 'response d'
 
 
 class TestSemanticEviction:
-  """SemanticCache evicts on the maintenance pass, not on write.
+    """SemanticCache evicts on the maintenance pass, not on write.
 
-  It ranks on hits rather than recency, and evicts down to a target below
-  max_entries so concurrent passes across workers do not thrash at the
-  boundary. Neither behaviour matches HashCache, so these cannot be shared.
-  """
+    It ranks on hits rather than recency, and evicts down to a target below
+    max_entries so concurrent passes across workers do not thrash at the
+    boundary. Neither behaviour matches HashCache, so these cannot be shared.
+    """
 
-  thread_id: str = 'thrd-1'
+    thread_id: str = 'thrd-1'
 
-  async def test_evicts_down_to_target_below_max_entries(
-    self, semantic_cache: SemanticCache
-  ) -> None:
-    await semantic_cache.clear()
-    for i in range(10):
-      await semantic_cache.set(f'query {i}', self.thread_id, f'response {i}')
+    async def test_evicts_down_to_target_below_max_entries(
+        self, semantic_cache: SemanticCache
+    ) -> None:
+        await semantic_cache.clear()
+        for i in range(10):
+            await semantic_cache.set(f'query {i}', self.thread_id, f'response {i}')
 
-    await semantic_cache.run_maintenance_once()
+        await semantic_cache.run_maintenance_once()
 
-    target = int(
-      semantic_cache.max_entries * semantic_cache.settings.cache_eviction_target_ratio
-    )
-    assert len(semantic_cache) == target
+        target = int(
+            semantic_cache.max_entries
+            * semantic_cache.settings.cache_eviction_target_ratio
+        )
+        assert len(semantic_cache) == target
 
-  async def test_evicts_least_frequently_used(
-    self, semantic_cache: SemanticCache
-  ) -> None:
-    await semantic_cache.clear()
-    await semantic_cache.set('a', self.thread_id, 'response a')
-    await semantic_cache.set('b', self.thread_id, 'response b')
-    await semantic_cache.set('c', self.thread_id, 'response c')
+    async def test_evicts_least_frequently_used(
+        self, semantic_cache: SemanticCache
+    ) -> None:
+        await semantic_cache.clear()
+        await semantic_cache.set('a', self.thread_id, 'response a')
+        await semantic_cache.set('b', self.thread_id, 'response b')
+        await semantic_cache.set('c', self.thread_id, 'response c')
 
-    # The queued hit on 'a' has to reach the index before eviction ranks on
-    # it, which is the ordering run_maintenance_once exists to guarantee.
-    await semantic_cache.get('a', self.thread_id)
-    await semantic_cache.set('d', self.thread_id, 'response d')
-    await semantic_cache.run_maintenance_once()
+        # The queued hit on 'a' has to reach the index before eviction ranks on
+        # it, which is the ordering run_maintenance_once exists to guarantee.
+        await semantic_cache.get('a', self.thread_id)
+        await semantic_cache.set('d', self.thread_id, 'response d')
+        await semantic_cache.run_maintenance_once()
 
-    assert await semantic_cache.get('a', self.thread_id) == 'response a'
+        assert await semantic_cache.get('a', self.thread_id) == 'response a'
 
 
 class TestStats:
-  thread_id: str = 'thrd-1'
+    thread_id: str = 'thrd-1'
 
-  async def test_counts_cached_queries(self, cache: Cache) -> None:
-    await cache.set('one', self.thread_id, 'a')
-    await cache.set('two', self.thread_id, 'b')
+    async def test_counts_cached_queries(self, cache: Cache) -> None:
+        await cache.set('one', self.thread_id, 'a')
+        await cache.set('two', self.thread_id, 'b')
 
-    assert (await cache.get_stats()).cached_queries == 2
+        assert (await cache.get_stats()).cached_queries == 2
 
-  async def test_hash_hits_are_counted_per_entry(self, hash_cache: HashCache) -> None:
-    await hash_cache.set('query', self.thread_id, 'response')
-    await hash_cache.get('query', self.thread_id)
-    final = await hash_cache.get('query', self.thread_id, return_full=True)
+    async def test_hash_hits_are_counted_per_entry(self, hash_cache: HashCache) -> None:
+        await hash_cache.set('query', self.thread_id, 'response')
+        await hash_cache.get('query', self.thread_id)
+        final = await hash_cache.get('query', self.thread_id, return_full=True)
 
-    assert isinstance(final, dict)
-    assert final['hits'] == 2
+        assert isinstance(final, dict)
+        assert final['hits'] == 2
 
-  async def test_semantic_hits_are_counted_per_entry(
-    self, semantic_cache: SemanticCache
-  ) -> None:
-    """Semantic hits are queued, so they only land on the maintenance pass.
+    async def test_semantic_hits_are_counted_per_entry(
+        self, semantic_cache: SemanticCache
+    ) -> None:
+        """Semantic hits are queued, so they only land on the maintenance pass.
 
-    That also means the read that observes them has to come after the flush,
-    unlike HashCache where the incrementing read returns the new count itself.
-    """
-    await semantic_cache.clear()
-    await semantic_cache.set('query', self.thread_id, 'response')
-    await semantic_cache.get('query', self.thread_id)
-    await semantic_cache.get('query', self.thread_id)
+        That also means the read that observes them has to come after the flush,
+        unlike HashCache where the incrementing read returns the new count itself.
+        """
+        await semantic_cache.clear()
+        await semantic_cache.set('query', self.thread_id, 'response')
+        await semantic_cache.get('query', self.thread_id)
+        await semantic_cache.get('query', self.thread_id)
 
-    await semantic_cache.run_maintenance_once()
-    final = await semantic_cache.get('query', self.thread_id, return_full=True)
+        await semantic_cache.run_maintenance_once()
+        final = await semantic_cache.get('query', self.thread_id, return_full=True)
 
-    assert isinstance(final, dict)
-    assert final['hits'] == 2
+        assert isinstance(final, dict)
+        assert final['hits'] == 2

@@ -4,7 +4,7 @@ from app.cache.cache import CacheStats
 
 
 class CacheResponse(BaseModel):
-  """Cache endpoint response"""
+    """Cache endpoint response"""
 
-  semantic: CacheStats
-  hash: CacheStats
+    semantic: CacheStats
+    hash: CacheStats
