@@ -35,8 +35,8 @@ class LLMEvaluator:
         )
 
     @traceable(name='qa_target')
-    def _qa_target(self, input: Input) -> Output:
-        response = self.chain.invoke({'question': input['question']})
+    def _qa_target(self, inputs: Input) -> Output:
+        response = self.chain.invoke({'question': inputs['question']})
         content = response.content
         return {'answer': content if isinstance(content, str) else str(content)}
 

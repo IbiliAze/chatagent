@@ -82,8 +82,8 @@ async def chat(request: Request, body: ChatRequest):
         # 3. Invoke the agent
         try:
             config = agent.build_config(thread_id=thread_id)
-            input = agent.build_message(input=input_text)
-            output = agent.process_message(input=input, config=config)
+            state = agent.build_message(text=input_text)
+            output = agent.process_message(state=state, config=config)
 
         except Exception as e:
             logger.error(
@@ -109,7 +109,8 @@ async def chat(request: Request, body: ChatRequest):
 
         # 4. Output validation
         output_result = security.check_output(output_text)
-        security_notes.append(output_result.reason) if output_result.reason else None
+        if output_result.reason:
+            security_notes.append(output_result.reason)
 
         # 5. Cache response
         await cache.hash.set(

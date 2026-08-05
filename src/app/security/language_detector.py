@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from lingua import Language, LanguageDetectorBuilder
+from lingua import Language, LanguageDetectorBuilder  # pylint: disable=no-name-in-module
 
 # A short candidate list beats the full set of spoken languages: every extra
 # language is one more look-alike a brief English message can lose to. Languages

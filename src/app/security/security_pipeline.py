@@ -47,12 +47,12 @@ class SecurityPipeline:
         self.language_detector = language_detector
 
     @traceable(name='security_check_input')
-    def check_input(self, input: str) -> InputCheckResult:
+    def check_input(self, text: str) -> InputCheckResult:
         """Process the user input prompt through security checks."""
         notes: list[str] = []
 
         # 1. Detect other languages
-        language_detection_result = self.language_detector.check(input)
+        language_detection_result = self.language_detector.check(text)
         if not language_detection_result.allowed:
             return InputCheckResult(
                 is_allowed=False,
@@ -64,15 +64,16 @@ class SecurityPipeline:
             )
 
         # 2. Check for suspicious input
-        suspense = self.input_sanitiser.is_suspicious(input)
+        suspense = self.input_sanitiser.is_suspicious(text)
         if suspense.is_suspicious:
-            notes.append(suspense.reason) if suspense.reason is not None else None
+            if suspense.reason is not None:
+                notes.append(suspense.reason)
             return InputCheckResult(
                 is_allowed=False, security_notes=notes, cleaned_text=''
             )
 
         # 3. Sanitise the input
-        cleaned = self.input_sanitiser.sanitise(input)
+        cleaned = self.input_sanitiser.sanitise(text)
 
         # 4. Mask PII
         cleaned_masked = self.pii_detector.mask(cleaned)

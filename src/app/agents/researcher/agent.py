@@ -73,7 +73,7 @@ class ResearcherAgent:
         return graph.compile(checkpointer=saver)  # pyright: ignore[reportUnknownMemberType]
 
     def process_message(
-        self, input: ResearcherState, config: RunnableConfig
+        self, state: ResearcherState, config: RunnableConfig
     ) -> ResearcherState:
         """Process a message.
 
@@ -84,11 +84,11 @@ class ResearcherAgent:
         """
         return cast(
             ResearcherState,
-            self.graph.invoke(input, config=config),  # pyright: ignore[reportUnknownMemberType]
+            self.graph.invoke(state, config=config),  # pyright: ignore[reportUnknownMemberType]
         )
 
     def stream_messages(
-        self, input: ResearcherState, config: RunnableConfig
+        self, state: ResearcherState, config: RunnableConfig
     ) -> Iterator[ResearcherResponse]:
         """Yield (node, message) pairs as each node produces them.
 
@@ -98,7 +98,9 @@ class ResearcherAgent:
         """
         stream = cast(
             Iterator[dict[str, ResearcherState]],
-            self.graph.stream(input, config=config, stream_mode='updates'),  # pyright: ignore[reportUnknownMemberType]
+            self.graph.stream(  # pyright: ignore[reportUnknownMemberType]
+                state, config=config, stream_mode='updates'
+            ),
         )
         for chunk in stream:
             for node, update in chunk.items():
@@ -132,11 +134,11 @@ class ResearcherAgent:
         return {'configurable': {'thread_id': thread_id}}
 
     @staticmethod
-    def build_message(input: str) -> ResearcherState:
+    def build_message(text: str) -> ResearcherState:
         """Builds a processable message."""
 
         return {
-            'messages': [HumanMessage(input)],
+            'messages': [HumanMessage(text)],
             'error': '',
             'retry_count': 0,
             'context_summary': '',
