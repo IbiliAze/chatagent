@@ -23,7 +23,7 @@ class TestEstimation:
         estimate = token_budget.estimate_tokens('Hi how much will I cost?', 'gpt-4o')
 
         assert estimate is not None
-        assert type(estimate) is int
+        assert isinstance(estimate, int)
         assert estimate > 0
 
 

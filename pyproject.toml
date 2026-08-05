@@ -69,4 +69,4 @@ markers = [
 ]
 
 [tool.pylint."MESSAGES CONTROL"]
-disable = ["redefined-outer-name", "unnecessary-ellipsis"]
+disable = ["redefined-outer-name", "unnecessary-ellipsis", "too-few-public-methods"]

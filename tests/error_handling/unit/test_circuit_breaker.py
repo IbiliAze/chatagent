@@ -24,7 +24,7 @@ class TestCircuitBreaker:
         response = circuit_breaker.call(evaluate)
 
         assert response is not None
-        assert type(response) is int
+        assert isinstance(response, int)
         assert circuit_breaker.state == 'closed'
         assert circuit_breaker.failures == 0
         assert circuit_breaker.last_failure_time == 0

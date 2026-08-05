@@ -3,13 +3,13 @@
 import os
 
 import pytest
+from langchain_openai import ChatOpenAI
+
+from app.security.security_guard import SecurityGuard
 from tests.security.regression.cases import (
     SECURITY_CASES,
     SecurityRegressionCase,
 )
-from langchain_openai import ChatOpenAI
-
-from app.security.security_guard import SecurityGuard
 
 pytestmark = [
     pytest.mark.regression,
