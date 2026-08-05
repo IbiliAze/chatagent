@@ -11,6 +11,14 @@ from core.models.models import Models
 type IndexMapping = dict[str, Any]
 
 
+def match_all_delete_kwargs() -> dict[str, Any]:
+    """Body/params for a delete_by_query that clears an entire index."""
+    return {
+        'body': {'query': {'match_all': {}}},
+        'params': {'conflicts': 'proceed', 'refresh': 'true'},
+    }
+
+
 class OpenSearch:
     """OpenSearch client plus the document and cache vector stores built on it."""
 

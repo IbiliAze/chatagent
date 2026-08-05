@@ -10,6 +10,7 @@ from opensearchpy.exceptions import OpenSearchException
 
 from core.config.settings import get_settings
 from core.logging.logger import logger
+from core.store.vectorstore.opensearch import match_all_delete_kwargs
 
 
 class Rag:
@@ -76,15 +77,7 @@ class Rag:
         """Clear the store"""
         self.vectorstore.client.delete_by_query(
             index=self.settings.opensearch_documents_index,
-            body={
-                'query': {
-                    'match_all': {},
-                },
-            },
-            params={
-                'conflicts': 'proceed',
-                'refresh': 'true',
-            },
+            **match_all_delete_kwargs(),
         )
 
     def _build_retriever(self) -> VectorStoreRetriever:

@@ -16,6 +16,7 @@ from opensearchpy.exceptions import (
 from app.cache.cache import Cache, CacheEntry, CacheStats
 from core.config.settings import get_settings
 from core.logging.logger import logger
+from core.store.vectorstore.opensearch import match_all_delete_kwargs
 
 
 class SemanticCache(Cache):
@@ -354,15 +355,7 @@ class SemanticCache(Cache):
         """Delete all entries from the cache index."""
         await self.vectorstore.async_client.delete_by_query(
             index=self.settings.opensearch_cache_index,
-            body={
-                'query': {
-                    'match_all': {},
-                },
-            },
-            params={
-                'conflicts': 'proceed',
-                'refresh': 'true',
-            },
+            **match_all_delete_kwargs(),
         )
 
     def __len__(self):

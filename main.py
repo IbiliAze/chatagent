@@ -3,7 +3,6 @@
 from uuid import uuid4
 
 from langchain_community.vectorstores import OpenSearchVectorSearch
-from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 
 # from langgraph.checkpoint.memory import MemorySaver
@@ -81,14 +80,7 @@ with SqliteSaver.from_conn_string(db_path) as saver:
             return
 
         print(f'\n{DIM_GREEN}>>> {question}{RESET}')
-        state: ResearcherState = {
-            'messages': [HumanMessage(question)],
-            'error': '',
-            'retry_count': 0,
-            'context_summary': '',
-            'current_agent': None,
-            'handoff_reason': '',
-        }
+        state: ResearcherState = ResearcherAgent.build_message(question)
         for response in agent.stream_messages(state, config=config):
             print(
                 f'{BRIGHT_GREEN}>>> [ {response.current_agent.upper()} ] {response.message.content}{RESET}\n'
