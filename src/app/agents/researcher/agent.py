@@ -1,6 +1,7 @@
 from collections.abc import Iterator
 from typing import cast
 
+from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -118,3 +119,21 @@ class ResearcherAgent:
   def get_state_history(self, config: RunnableConfig):
     """Get current LangGraph state."""
     return self.graph.get_state_history(config)
+
+  @staticmethod
+  def build_config(thread_id: str) -> RunnableConfig:
+    """Builds a runnable config."""
+    return {'configurable': {'thread_id': thread_id}}
+
+  @staticmethod
+  def build_message(input: str) -> ResearcherState:
+    """Builds a processable message."""
+
+    return {
+      'messages': [HumanMessage(input)],
+      'error': '',
+      'retry_count': 0,
+      'context_summary': '',
+      'current_agent': None,
+      'handoff_reason': '',
+    }
