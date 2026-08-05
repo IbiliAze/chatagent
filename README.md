@@ -25,6 +25,18 @@ uv run uvicorn api.main:app --app-dir src --reload
 
 Conversation state is checkpointed to a local `checkpoints.db` SQLite file.
 
+## Web UI (chat tester)
+
+A minimal React/TypeScript chat widget lives in `web/`, for manually testing the API.
+
+```sh
+cd web
+yarn install   # first time only
+yarn dev
+```
+
+Open http://localhost:5173 — the dev server proxies `/chat`, `/health`, `/metrics`, `/cache`, and `/knowledge` to the backend on `:8000`, so both the backend (and OpenSearch) need to be running first.
+
 ## Tests
 
 ```sh
@@ -35,7 +47,8 @@ uv run pytest -m regression            # LLM quality regression suite
 
 ## Project layout
 
-- `src/api/` — FastAPI app assembly (lifespan-managed agent/cache/security/metrics) and routes: `/chat`, `/health`, `/metrics`, `/cache/stats`
+- `src/api/` — FastAPI app assembly (lifespan-managed agent/cache/security/metrics, exposed to routes via `app.state` + `Depends()`) and routes: `/chat`, `/health`, `/metrics`, `/cache/stats`, `/knowledge`
+- `web/` — React/TypeScript chat widget for manually testing the API (see "Web UI" above)
 - `src/app/agents/researcher/` — LangGraph researcher agent (nodes, routes, tools, state)
 - `src/app/security/` — input sanitiser, PII detector (Presidio/GLiNER), language detector, output validator, and the security pipeline/guard that wires them together
 - `src/app/rag/` — retrieval over the OpenSearch-backed document vector store
