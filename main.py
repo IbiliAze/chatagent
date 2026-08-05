@@ -53,10 +53,10 @@ if rag.get_document_count() == 0:
     )
 
 
-db_path = 'checkpoints.db'
+DB_PATH = 'checkpoints.db'
 
-with SqliteSaver.from_conn_string(db_path) as saver:
-    print(f'DB was created at {db_path}')
+with SqliteSaver.from_conn_string(DB_PATH) as saver:
+    print(f'DB was created at {DB_PATH}')
     models = Models()
     mcp_client = McpClient(name='eightmile')
     tools = ResearcherTools(rag=rag, mcp_client=mcp_client)
@@ -83,7 +83,8 @@ with SqliteSaver.from_conn_string(db_path) as saver:
         state: ResearcherState = ResearcherAgent.build_message(question)
         for response in agent.stream_messages(state, config=config):
             print(
-                f'{BRIGHT_GREEN}>>> [ {response.current_agent.upper()} ] {response.message.content}{RESET}\n'
+                f'{BRIGHT_GREEN}>>> [ {response.current_agent.upper()} ] ',
+                f'{response.message.content}{RESET}\n'
                 f'  {GRAY}• model: {response.model_used}{RESET}\n',
                 f'  {GRAY}• hand-off reason: {response.handoff_reason}{RESET}\n',
                 flush=True,

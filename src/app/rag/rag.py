@@ -40,7 +40,9 @@ class Rag:
         self.vectorstore.add_documents(chunks)
 
         logger.info(
-            f'Added {len(chunks)} chunks from {len(documents)} documents to vector store.'
+            'Added %d chunks from %d documents to vector store.',
+            len(chunks),
+            len(documents),
         )
 
         return len(chunks)
@@ -69,7 +71,7 @@ class Rag:
             retriever = self._build_retriever()
             documents = retriever.invoke(query)
         except OpenSearchException:
-            logger.exception(f'RAG retrieval failed for query {query!r}')
+            logger.exception('RAG retrieval failed for query %r', query)
             return 'Document search is temporarily unavailable.'
         return self._format_docs_for_context(documents)
 
