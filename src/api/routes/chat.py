@@ -161,7 +161,7 @@ async def chat(  # pylint: disable=too-many-arguments,too-many-positional-argume
         # 3. Invoke the agent
         output = _invoke_agent(agent, metrics, thread_id, input_text)
 
-        output_text = str(output['messages'][-1])
+        output_text = str(output['messages'][-1].content)
         model_used = output.get('model_used', settings.primary_model)
 
         # 4. Output validation
