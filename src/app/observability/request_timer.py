@@ -1,7 +1,7 @@
 """Context manager for measuring elapsed wall-clock time."""
 
 import time
-from types import TracebackType
+from types import TracebackType  # pylint: disable=no-name-in-module
 from typing import Self
 
 

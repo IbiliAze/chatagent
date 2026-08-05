@@ -10,6 +10,10 @@ P = ParamSpec('P')
 T = TypeVar('T')
 
 
+class CircuitBreakerOpenError(Exception):
+    """Raised when the circuit is open and rejecting calls."""
+
+
 class CircuitBreaker:
     """Circuit breaker for failing services"""
 
@@ -32,7 +36,7 @@ class CircuitBreaker:
             if time() - self.last_failure_time > self.recovery_timeout:
                 self.state = 'half-open'
             else:
-                raise Exception('Circuit breaker is OPEN')
+                raise CircuitBreakerOpenError('Circuit breaker is OPEN')
 
         try:
             result = func(*args, **kwargs)

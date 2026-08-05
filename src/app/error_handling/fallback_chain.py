@@ -10,6 +10,10 @@ type ModelName = str
 type ModelType = list[tuple[ModelName, ChatOpenAI | ChatAnthropic]]
 
 
+class AllModelsFailedError(Exception):
+    """Raised when every model in the fallback chain fails to answer."""
+
+
 @dataclass(frozen=True)
 class InvokeResult:
     """The model that answered a query, and its response."""
@@ -55,8 +59,8 @@ class FallBackChain:
                 self.cache[query] = result
                 return InvokeResult(model_name=model_name, result=result)
 
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
                 errors.append(f'{model_name}: {str(e)}')
                 continue
 
-        raise Exception(f'All models failed: {errors}')
+        raise AllModelsFailedError(f'All models failed: {errors}')
