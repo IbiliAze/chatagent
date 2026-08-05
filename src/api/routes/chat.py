@@ -101,7 +101,7 @@ async def chat(request: Request, body: ChatRequest):
       )
 
     output_text = str(output['messages'][-1])
-    model_used = output['model_used'] or ''
+    model_used = output.get('model_used', settings.primary_model)
 
     # 4. Output validation
     output_result = security.check_output(output_text)
