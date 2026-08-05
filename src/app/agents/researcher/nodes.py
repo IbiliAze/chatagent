@@ -1,3 +1,5 @@
+"""LangGraph node implementations for the triage and specialist agents."""
+
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
 from langchain_core.tools import BaseTool
@@ -23,6 +25,8 @@ load_dotenv()
 
 
 class ResearcherNodes:
+    """Node callables bound to a shared LLM and tool set for the researcher graph."""
+
     def __init__(self, models: Models, tools: list[BaseTool]) -> None:
         self.llm = models.llm
         self.llm_with_tools = models.with_tools(tools)

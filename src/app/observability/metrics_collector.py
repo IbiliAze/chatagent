@@ -1,8 +1,12 @@
+"""In-process request metrics collection and summarisation."""
+
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
 class MetricsSummary:
+    """Aggregated request metrics as of the time get_summary() was called."""
+
     total_requests: int
     total_errors: int
     error_rate: float
@@ -35,6 +39,7 @@ class MetricsCollector:
         error: bool = False,
         cache_hit: bool = False,
     ) -> None:
+        """Record one request's latency, token counts, and outcome."""
         self.metrics['requests_total'] += 1
         self.metrics['latency_sum'] += latency_ms
         self.metrics['latency_count'] += 1

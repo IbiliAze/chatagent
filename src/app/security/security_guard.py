@@ -1,3 +1,5 @@
+"""LLM-based classifier that flags prompt injection and other unsafe input."""
+
 import json
 from dataclasses import dataclass
 
@@ -11,11 +13,15 @@ load_dotenv()
 
 @dataclass(frozen=True)
 class SecurityCheckResult:
+    """Whether input was judged safe, and why not."""
+
     safe: bool
     reason: str
 
 
 class SecurityGuard:
+    """Classifies user input as safe or unsafe using an LLM."""
+
     def __init__(self, llm: ChatOpenAI) -> None:
         self.prompt = ChatPromptTemplate.from_messages(
             [

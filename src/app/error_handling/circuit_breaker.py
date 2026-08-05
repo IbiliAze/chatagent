@@ -1,3 +1,5 @@
+"""Circuit breaker for wrapping calls to failing services."""
+
 from collections.abc import Callable
 from time import time
 from typing import Any, Literal, ParamSpec, TypeVar

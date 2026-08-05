@@ -1,3 +1,5 @@
+"""Shared type aliases for model configuration."""
+
 from typing import Literal
 
 type AvailableModels = Literal[

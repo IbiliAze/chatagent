@@ -1,3 +1,5 @@
+"""English-only language gate used on both input and output."""
+
 from dataclasses import dataclass
 
 from lingua import Language, LanguageDetectorBuilder
@@ -39,6 +41,8 @@ MIN_ENGLISH_CONFIDENCE = 0.15
 
 @dataclass(frozen=True)
 class LanguageCheckResult:
+    """Whether text was allowed through the English-only gate, and why not."""
+
     allowed: bool
     detected_language: str | None
     reason: str | None = None
@@ -67,6 +71,7 @@ class LanguageDetector:
         ).build()
 
     def check(self, text: str) -> LanguageCheckResult:
+        """Check whether text is plausibly English."""
         if not text.strip():
             return LanguageCheckResult(
                 allowed=False,

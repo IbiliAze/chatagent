@@ -1,3 +1,5 @@
+"""FastAPI app assembly: lifespan-managed components, limiter, and rate-limit handler."""
+
 import asyncio
 from contextlib import ExitStack, asynccontextmanager, suppress
 from dataclasses import dataclass
@@ -138,4 +140,4 @@ app.state.limiter = limiter
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
-    pass
+    """Handle requests that exceed the rate limit."""

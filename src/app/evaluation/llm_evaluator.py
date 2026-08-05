@@ -1,3 +1,5 @@
+"""LangSmith-based correctness evaluation of an LLM's Q&A answers."""
+
 from typing import Literal, cast
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -14,6 +16,8 @@ type Output = dict[Literal['answer'], str]
 
 
 class LLMEvaluator:
+    """Runs a LangSmith correctness evaluation against a fixed Q&A dataset."""
+
     def __init__(self, llm: ChatOpenAI):
         prompt = ChatPromptTemplate.from_template(
             'Answer this question concisely: {question}'
@@ -22,6 +26,7 @@ class LLMEvaluator:
         self.client = Client()
 
     def run_eval(self):
+        """Run the correctness evaluation and record results in LangSmith."""
         evaluate(
             self._qa_target,
             data=self._create_eval_dataset(),

@@ -1,3 +1,5 @@
+"""Orchestrates the individual security checks into an input and output pipeline."""
+
 from dataclasses import dataclass
 
 from langsmith import traceable  # pyright: ignore[reportUnknownVariableType]
@@ -11,6 +13,8 @@ from app.security.security_guard import SecurityGuard
 
 @dataclass(frozen=True)
 class InputCheckResult:
+    """Result of running user input through the full input security pipeline."""
+
     is_allowed: bool
     cleaned_text: str
     security_notes: list[str]
@@ -18,6 +22,8 @@ class InputCheckResult:
 
 @dataclass(frozen=True)
 class OutputCheckResult:
+    """Result of running LLM output through the full output security pipeline."""
+
     is_valid: bool
     output: str
     reason: str | None

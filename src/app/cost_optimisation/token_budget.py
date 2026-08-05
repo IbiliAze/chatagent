@@ -1,3 +1,5 @@
+"""Per-request token budget enforcement and usage tracking."""
+
 from dataclasses import dataclass
 
 import tiktoken
@@ -8,12 +10,16 @@ from core.config.types import AvailableModels
 
 @dataclass(frozen=True)
 class CheckBudgetResponse:
+    """Result of a budget check for a piece of text."""
+
     within_budget: bool
     tokens: int
 
 
 @dataclass(frozen=True)
 class GetStatsResponse:
+    """Cumulative token usage across all recorded requests."""
+
     total_input: int
     total_output: int
     total_requests: int
@@ -23,6 +29,8 @@ settings = get_settings()
 
 
 class TokenBudget:
+    """Tracks token usage and checks text against the per-request budget."""
+
     def __init__(self, max_tokens_per_request: int = settings.token_budget) -> None:
         self.max_tokens_per_request = max_tokens_per_request
         self.usage = {

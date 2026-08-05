@@ -1,3 +1,5 @@
+"""OpenSearch client and index provisioning for documents and the semantic cache."""
+
 from typing import Any
 
 from langchain_community.vectorstores import OpenSearchVectorSearch
@@ -10,6 +12,8 @@ type IndexMapping = dict[str, Any]
 
 
 class OpenSearch:
+    """OpenSearch client plus the document and cache vector stores built on it."""
+
     VECTOR_FIELD = 'vector_field'
     TEXT_FIELD = 'text'
     METADATA_FIELD = 'metadata'

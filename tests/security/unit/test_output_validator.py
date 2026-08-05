@@ -1,3 +1,5 @@
+"""Tests for OutputValidator's harmful-content and PII checks."""
+
 import pytest
 
 from app.security.output_validator import OutputValidator
@@ -8,15 +10,19 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def pii_detector() -> PIIDetector:
+    """Build a PIIDetector for the tests."""
     return PIIDetector()
 
 
 @pytest.fixture
 def output_validator(pii_detector: PIIDetector) -> OutputValidator:
+    """Build an OutputValidator wired to the PIIDetector fixture."""
     return OutputValidator(pii_detector=pii_detector)
 
 
 class TestInvalidOutput:
+    """validate's rejection of harmful content and PII."""
+
     @pytest.mark.parametrize(
         'text',
         [
@@ -27,6 +33,7 @@ class TestInvalidOutput:
     def test_harmful_patterns(
         self, output_validator: OutputValidator, text: str
     ) -> None:
+        """Text matching a harmful pattern is blocked and replaced entirely."""
         result = output_validator.validate(text)
 
         assert result.is_valid is False
@@ -42,6 +49,7 @@ class TestInvalidOutput:
     def test_pii_detection_patterns(
         self, output_validator: OutputValidator, text: str
     ) -> None:
+        """Text containing PII is invalidated and the PII is masked in the output."""
         result = output_validator.validate(text)
 
         assert result.is_valid is False

@@ -1,3 +1,5 @@
+"""Shared JSON-formatted logger for the application."""
+
 import logging
 
 from core.config.settings import get_settings

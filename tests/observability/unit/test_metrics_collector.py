@@ -1,3 +1,5 @@
+"""Tests for MetricsCollector's request recording and summary computation."""
+
 import pytest
 
 from app.observability.metrics_collector import MetricsCollector
@@ -5,11 +7,15 @@ from app.observability.metrics_collector import MetricsCollector
 
 @pytest.fixture
 def metrics_collector() -> MetricsCollector:
+    """Build a fresh MetricsCollector for the tests."""
     return MetricsCollector()
 
 
 class TestMetricsCollector:
+    """record_request and get_summary behaviour."""
+
     def test_records(self, metrics_collector: MetricsCollector) -> None:
+        """get_summary aggregates latency, tokens, errors, and cache hits across requests."""
         metrics_collector.record_request(
             latency_ms=10,
             input_tokens=100,
@@ -38,6 +44,7 @@ class TestMetricsCollector:
     def test_empty_collector_returns_zeroed_summary(
         self, metrics_collector: MetricsCollector
     ) -> None:
+        """A collector with no recorded requests reports every stat as zero."""
         summary = metrics_collector.get_summary()
 
         assert summary.total_requests == 0
@@ -51,6 +58,7 @@ class TestMetricsCollector:
     def test_error_rate_is_ratio_of_errors_to_requests(
         self, metrics_collector: MetricsCollector
     ) -> None:
+        """error_rate is the fraction of recorded requests that errored."""
         for error in (True, False, False, False):
             metrics_collector.record_request(
                 latency_ms=1, input_tokens=1, output_tokens=1, error=error
@@ -61,6 +69,7 @@ class TestMetricsCollector:
     def test_cache_hit_rate_is_ratio_of_hits_to_total(
         self, metrics_collector: MetricsCollector
     ) -> None:
+        """cache_hit_rate is the fraction of recorded requests that were cache hits."""
         for cache_hit in (True, False, False, False):
             metrics_collector.record_request(
                 latency_ms=1, input_tokens=1, output_tokens=1, cache_hit=cache_hit
@@ -71,6 +80,7 @@ class TestMetricsCollector:
     def test_cache_hit_defaults_to_miss(
         self, metrics_collector: MetricsCollector
     ) -> None:
+        """Omitting cache_hit counts the request as a miss."""
         metrics_collector.record_request(latency_ms=1, input_tokens=1, output_tokens=1)
 
         assert metrics_collector.get_summary().cache_hit_rate == 0
@@ -78,6 +88,7 @@ class TestMetricsCollector:
     def test_avg_latency_is_rounded_to_two_places(
         self, metrics_collector: MetricsCollector
     ) -> None:
+        """avg_latency_ms is rounded to two decimal places."""
         for latency_ms in (10, 20, 25):
             metrics_collector.record_request(
                 latency_ms=latency_ms, input_tokens=1, output_tokens=1
@@ -88,6 +99,7 @@ class TestMetricsCollector:
     def test_failed_requests_still_count_tokens_and_latency(
         self, metrics_collector: MetricsCollector
     ) -> None:
+        """A request that errored still contributes its tokens and latency to the summary."""
         metrics_collector.record_request(
             latency_ms=40, input_tokens=100, output_tokens=200, error=True
         )

@@ -1,3 +1,5 @@
+"""Standard error response model."""
+
 from pydantic import BaseModel
 
 

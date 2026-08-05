@@ -1,3 +1,5 @@
+"""Unit tests for Rag against a mocked vector store."""
+
 from collections.abc import Iterator
 from datetime import datetime
 from unittest.mock import MagicMock
@@ -33,11 +35,13 @@ def _settings_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
 @pytest.fixture
 def vectorstore() -> MagicMock:
+    """A mocked vector store standing in for OpenSearchVectorSearch."""
     return MagicMock()
 
 
 @pytest.fixture
 def rag(vectorstore: MagicMock) -> Rag:
+    """Build a Rag instance backed by the mocked vector store."""
     return Rag(vectorstore)
 
 
@@ -47,7 +51,10 @@ def indexed_chunks(vectorstore: MagicMock) -> list[Document]:
 
 
 class TestAddDocuments:
+    """add_documents' chunking and metadata stamping."""
+
     def test_returns_chunk_count(self, rag: Rag) -> None:
+        """Returns the number of chunks the document was split into."""
         count = rag.add_documents([Document(page_content='short')], source='src')
 
         assert count == 1
@@ -55,6 +62,7 @@ class TestAddDocuments:
     def test_passes_chunks_to_vector_store(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """The chunked documents are handed to the vector store's add_documents."""
         rag.add_documents([Document(page_content='short')], source='src')
 
         vectorstore.add_documents.assert_called_once()
@@ -63,6 +71,7 @@ class TestAddDocuments:
     def test_stamps_source_on_every_chunk(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """Every chunk's metadata carries the given source."""
         rag.add_documents(
             [Document(page_content='a'), Document(page_content='b')], source='my-source'
         )
@@ -74,6 +83,7 @@ class TestAddDocuments:
     def test_stamps_indexed_at_on_every_chunk(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """Every chunk's metadata carries a valid indexed_at timestamp."""
         rag.add_documents([Document(page_content='a')], source='src')
 
         stamped = indexed_chunks(vectorstore)[0].metadata['indexed_at']
@@ -83,6 +93,7 @@ class TestAddDocuments:
     def test_blank_source_is_not_stamped(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """An empty source string is not written into chunk metadata."""
         rag.add_documents([Document(page_content='a')], source='')
 
         assert 'source' not in indexed_chunks(vectorstore)[0].metadata
@@ -90,6 +101,7 @@ class TestAddDocuments:
     def test_splits_documents_longer_than_chunk_size(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """A document longer than the chunk size is split into multiple chunks."""
         long_text = '. '.join(f'Sentence number {i} about chunking' for i in range(200))
 
         count = rag.add_documents([Document(page_content=long_text)], source='src')
@@ -100,6 +112,7 @@ class TestAddDocuments:
     def test_split_chunks_inherit_source(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """Every chunk produced by splitting a long document keeps the source."""
         long_text = '. '.join(f'Sentence number {i} about chunking' for i in range(200))
 
         rag.add_documents([Document(page_content=long_text)], source='my-source')
@@ -110,7 +123,10 @@ class TestAddDocuments:
 
 
 class TestAddTexts:
+    """add_texts wraps raw strings as Documents before indexing."""
+
     def test_wraps_texts_as_documents(self, rag: Rag, vectorstore: MagicMock) -> None:
+        """Each input string becomes its own indexed chunk."""
         count = rag.add_texts(['first', 'second'], source='src')
 
         assert count == 2
@@ -120,21 +136,26 @@ class TestAddTexts:
         ]
 
     def test_stamps_source(self, rag: Rag, vectorstore: MagicMock) -> None:
+        """The given source is stamped onto the wrapped chunk's metadata."""
         rag.add_texts(['first'], source='my-source')
 
         assert indexed_chunks(vectorstore)[0].metadata['source'] == 'my-source'
 
 
 class TestGetDocumentCount:
+    """get_document_count against a missing or existing index."""
+
     def test_returns_zero_when_index_is_missing(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """Returns 0 without querying the count when the index doesn't exist."""
         vectorstore.client.indices.exists.return_value = False
 
         assert rag.get_document_count() == 0
         vectorstore.client.count.assert_not_called()
 
     def test_returns_count_from_client(self, rag: Rag, vectorstore: MagicMock) -> None:
+        """Returns the count reported by the vector store's client."""
         vectorstore.client.indices.exists.return_value = True
         vectorstore.client.count.return_value = {'count': 7}
 
@@ -142,9 +163,12 @@ class TestGetDocumentCount:
 
 
 class TestAsk:
+    """ask's retrieval, formatting, and error handling."""
+
     def test_retrieves_four_most_similar_documents(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """Builds a similarity retriever with k=4 and invokes it with the query."""
         vectorstore.as_retriever.return_value.invoke.return_value = []
 
         rag.ask('a query')
@@ -157,6 +181,7 @@ class TestAsk:
     def test_formats_retrieved_documents(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """Retrieved documents are formatted with their source label."""
         vectorstore.as_retriever.return_value.invoke.return_value = [
             Document(page_content='body', metadata={'source': 'src'})
         ]
@@ -166,6 +191,7 @@ class TestAsk:
     def test_returns_placeholder_when_nothing_retrieved(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """Returns a placeholder message when retrieval finds no documents."""
         vectorstore.as_retriever.return_value.invoke.return_value = []
 
         assert rag.ask('a query') == 'No relevant documents found.'
@@ -173,6 +199,7 @@ class TestAsk:
     def test_returns_fallback_when_retrieval_fails(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """An OpenSearchException during retrieval is turned into a friendly message."""
         vectorstore.as_retriever.return_value.invoke.side_effect = OpenSearchException(
             'cluster down'
         )
@@ -182,6 +209,7 @@ class TestAsk:
     def test_does_not_swallow_unexpected_errors(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """Errors other than OpenSearchException propagate to the caller."""
         vectorstore.as_retriever.return_value.invoke.side_effect = ValueError('bug')
 
         with pytest.raises(ValueError, match='bug'):
@@ -189,7 +217,10 @@ class TestAsk:
 
 
 class TestFormatDocsForContext:
+    """Formatting of retrieved documents into the prompt-ready context string."""
+
     def test_numbers_sources_from_one(self, rag: Rag, vectorstore: MagicMock) -> None:
+        """Sources are numbered starting at 1, in retrieval order."""
         documents = [
             Document(page_content='first', metadata={'source': 'a'}),
             Document(page_content='second', metadata={'source': 'b'}),
@@ -204,6 +235,7 @@ class TestFormatDocsForContext:
     def test_joins_documents_with_a_separator(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """Multiple formatted documents are joined by the '---' separator."""
         documents = [
             Document(page_content='first', metadata={'source': 'a'}),
             Document(page_content='second', metadata={'source': 'b'}),
@@ -217,6 +249,7 @@ class TestFormatDocsForContext:
     def test_falls_back_to_unknown_source(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """A document with no source metadata is labelled 'unknown'."""
         vectorstore.as_retriever.return_value.invoke.return_value = [
             Document(page_content='body')
         ]
@@ -228,6 +261,7 @@ class TestFormatDocsForContext:
     def test_empty_documents_returns_placeholder(
         self, rag: Rag, vectorstore: MagicMock
     ) -> None:
+        """An empty document list formats to the placeholder message."""
         vectorstore.as_retriever.return_value.invoke.return_value = []
 
         assert rag.ask('a query') == 'No relevant documents found.'

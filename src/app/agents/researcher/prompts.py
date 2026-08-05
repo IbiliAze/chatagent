@@ -1,3 +1,5 @@
+"""System prompts for the triage agent and the sales/support/billing specialists."""
+
 SYSTEM_PROMPT = """You are a research assistant. Answer the user's question \
 using the tools available to you."""
 
@@ -20,6 +22,7 @@ it to sales instead so it can be looked up."""
 
 
 def SALES_AGENT_PROMPT(context: str):
+    """Build the sales specialist's system prompt with triage context."""
     return f"""You are a sales specicialist. Context from triage {context}.
   
   Help the customer with product or service purchases and questions.
@@ -27,6 +30,7 @@ def SALES_AGENT_PROMPT(context: str):
 
 
 def SUPPORT_AGENT_PROMPT(context: str):
+    """Build the support specialist's system prompt with triage context."""
     return f"""You are a technical support specicialist. Context from triage {context}.
   
   Help the customer with technical issues.
@@ -34,6 +38,7 @@ def SUPPORT_AGENT_PROMPT(context: str):
 
 
 def BILLING_AGENT_PROMPT(context: str):
+    """Build the billing specialist's system prompt with triage context."""
     return f"""You are a billing specicialist. Context from triage {context}.
   
   Help the customer with billing questions.

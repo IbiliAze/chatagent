@@ -1,3 +1,5 @@
+"""LLM clients with a shared primary/fallback chain, plus the embedding model."""
+
 from collections.abc import Callable
 from typing import cast
 
@@ -40,6 +42,8 @@ FALLBACK_ERRORS: tuple[type[BaseException], ...] = (
 
 
 class Models:
+    """Builds the primary/fallback LLM chain and exposes bound-tool/schema variants."""
+
     def __init__(self) -> None:
         settings = get_settings()
 
@@ -103,11 +107,13 @@ class Models:
     def with_tools(
         self, tools: list[BaseTool]
     ) -> RunnableWithFallbacks[LanguageModelInput, AIMessage]:
+        """Bind tools to every model in the chain, with fallbacks wired up."""
         return self._compose(lambda model: model.bind_tools(tools))
 
     def with_schema[SchemaT: BaseModel](
         self, schema: type[SchemaT]
     ) -> RunnableWithFallbacks[LanguageModelInput, SchemaT]:
+        """Bind a structured output schema to every model in the chain."""
         return self._compose(
             lambda model: cast(
                 Runnable[LanguageModelInput, SchemaT],

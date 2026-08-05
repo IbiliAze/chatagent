@@ -1,3 +1,5 @@
+"""Integration tests for SecurityGuard against a real LLM."""
+
 import os
 from typing import TypedDict
 
@@ -15,12 +17,15 @@ pytestmark = [
 
 
 class UnsafeInputCase(TypedDict):
+    """An unsafe input and the keywords its rejection reason should contain."""
+
     input: str
     expected_contains: list[str]
 
 
 @pytest.fixture
 def security_guard() -> SecurityGuard:
+    """Build a SecurityGuard backed by a real gpt-4o-mini call."""
     return SecurityGuard(ChatOpenAI(model='gpt-4o-mini', temperature=0))
 
 
@@ -43,6 +48,7 @@ class TestSecurityGuardIntegration:
     def test_flags_unsafe_input(
         self, security_guard: SecurityGuard, test_case: UnsafeInputCase
     ) -> None:
+        """A real LLM call flags the unsafe input with a matching reason."""
         response = security_guard.security_check(test_case['input'])
 
         assert response.safe is False
@@ -50,6 +56,7 @@ class TestSecurityGuardIntegration:
         assert any(keyword in reason for keyword in test_case['expected_contains'])
 
     def test_passes_safe_input(self, security_guard: SecurityGuard) -> None:
+        """A real LLM call passes an ordinary, safe question."""
         response = security_guard.security_check('what is the capital of france?')
 
         assert response.safe is True

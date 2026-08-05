@@ -1,3 +1,5 @@
+"""In-process LRU cache keyed on a hash of the normalised query."""
+
 import hashlib
 from collections import OrderedDict
 from threading import Lock

@@ -1,3 +1,5 @@
+"""Regex-based Presidio recognizers for common structured PII entities."""
+
 from typing import Final
 
 from presidio_analyzer import Pattern, PatternRecognizer
@@ -16,6 +18,8 @@ ADDRESS_SUFFIXES = (
 
 
 class PatternRecogniser:
+    """Namespace holding the regex-based recognizers for structured PII entities."""
+
     PATTERNS = [
         PatternRecognizer(
             supported_entity='EMAIL',

@@ -1,3 +1,5 @@
+"""Cache stats endpoint."""
+
 from api import main
 from api.main import app
 from api.models.cache import CacheResponse

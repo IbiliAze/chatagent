@@ -1,3 +1,5 @@
+"""Decorator that retries a node against a fallback LLM on transient API errors."""
+
 from collections.abc import Awaitable, Callable
 from functools import wraps
 from typing import ParamSpec, TypeVar
@@ -24,6 +26,8 @@ def with_fallback_llm(
     [Callable[P, Awaitable[R]]],
     Callable[P, Awaitable[R]],
 ]:
+    """Wrap a node so it retries once against `fallback` on a transient API error."""
+
     def decorator(
         node: Callable[P, Awaitable[R]],
     ) -> Callable[P, Awaitable[R]]:

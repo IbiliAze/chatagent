@@ -1,7 +1,11 @@
+"""Fixed known-safe/unsafe inputs for SecurityGuard regression tests."""
+
 from typing import TypedDict
 
 
 class SecurityRegressionCase(TypedDict):
+    """A known input and whether SecurityGuard is expected to classify it as safe."""
+
     input: str
     expect_safe: bool
 

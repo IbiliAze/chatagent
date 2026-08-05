@@ -1,3 +1,5 @@
+"""Application settings, loaded from the environment and .env file."""
+
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings
@@ -6,6 +8,8 @@ from core.config.types import AvailableModels
 
 
 class Settings(BaseSettings):
+    """Environment-backed application configuration."""
+
     # LLM Configuration
     openai_api_key: str
     anthropic_api_key: str
@@ -61,9 +65,11 @@ class Settings(BaseSettings):
 
     @property
     def is_production(self) -> bool:
+        """Whether the app is running in the production environment."""
         return self.app_env == 'production'
 
 
 @lru_cache
 def get_settings() -> Settings:
+    """Get the cached Settings instance, constructing it on first call."""
     return Settings()  # type: ignore[call-arg]

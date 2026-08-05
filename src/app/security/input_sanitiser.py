@@ -1,9 +1,13 @@
+"""Prompt-injection pattern matching and light input cleanup."""
+
 import re
 from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
 class IsSuspiciousResult:
+    """Whether input matched a known injection pattern, and which one."""
+
     is_suspicious: bool
     reason: str | None
 

@@ -1,3 +1,5 @@
+"""Tests for LanguageDetector's English-only gate, including against prompt injection."""
+
 import pytest
 
 from app.security.language_detector import LanguageCheckResult, LanguageDetector
@@ -5,10 +7,13 @@ from app.security.language_detector import LanguageCheckResult, LanguageDetector
 
 @pytest.fixture
 def language_detector() -> LanguageDetector:
+    """Build a LanguageDetector for the tests."""
     return LanguageDetector()
 
 
 class TestLanguageDetector:
+    """Baseline English/non-English classification."""
+
     @pytest.mark.parametrize(
         'text',
         [
@@ -22,6 +27,7 @@ class TestLanguageDetector:
     def test_english_passes(
         self, language_detector: LanguageDetector, text: str
     ) -> None:
+        """Clean English sentences are allowed."""
         result = language_detector.check(text)
 
         assert result is not None
@@ -41,6 +47,7 @@ class TestLanguageDetector:
     def test_slight_errors_in_english_pass(
         self, language_detector: LanguageDetector, text: str
     ) -> None:
+        """English with minor typos is still allowed."""
         result = language_detector.check(text)
 
         assert result is not None
@@ -59,6 +66,7 @@ class TestLanguageDetector:
     def test_non_english_names_pass(
         self, language_detector: LanguageDetector, text: str
     ) -> None:
+        """English sentences containing non-English names are still allowed."""
         result = language_detector.check(text)
 
         assert result is not None
@@ -77,6 +85,7 @@ class TestLanguageDetector:
     def test_non_english_fails(
         self, language_detector: LanguageDetector, text: str
     ) -> None:
+        """Sentences in other languages are blocked with a reason."""
         result = language_detector.check(text)
 
         assert result is not None
@@ -107,6 +116,7 @@ class TestLanguageDetectorAgainstPromptInjection:
     def test_english_injection_passes_the_language_gate(
         self, language_detector: LanguageDetector, text: str
     ) -> None:
+        """An English-language injection attempt still passes the language gate."""
         result = language_detector.check(text)
 
         assert isinstance(result, LanguageCheckResult)
@@ -127,6 +137,7 @@ class TestLanguageDetectorAgainstPromptInjection:
     def test_non_english_injection_is_blocked(
         self, language_detector: LanguageDetector, text: str
     ) -> None:
+        """A non-English injection attempt is blocked by the language gate."""
         result = language_detector.check(text)
 
         assert isinstance(result, LanguageCheckResult)
@@ -147,6 +158,7 @@ class TestLanguageDetectorAgainstPromptInjection:
     def test_obfuscated_english_injection_passes_the_language_gate(
         self, language_detector: LanguageDetector, text: str
     ) -> None:
+        """Leetspeak, zero-width joiners, and base64-encoded English still read as English."""
         result = language_detector.check(text)
 
         assert isinstance(result, LanguageCheckResult)
@@ -163,6 +175,7 @@ class TestLanguageDetectorAgainstPromptInjection:
     def test_injection_markup_does_not_confuse_the_language_read(
         self, language_detector: LanguageDetector, text: str
     ) -> None:
+        """XML/JSON-shaped injection markup around English text still reads as English."""
         result = language_detector.check(text)
 
         assert isinstance(result, LanguageCheckResult)
@@ -206,8 +219,11 @@ class TestLanguageDetectorAgainstPromptInjection:
     def test_foreign_injection_opener_is_too_short_to_judge(
         self, language_detector: LanguageDetector, text: str
     ) -> None:
-        # Under MIN_LETTERS the gate abstains instead of guessing, so a short
-        # foreign opener is passed on to SecurityGuard rather than blocked.
+        """A short foreign phrase is passed through instead of guessed at.
+
+        Under MIN_LETTERS the gate abstains instead of guessing, so a short
+        foreign opener is passed on to SecurityGuard rather than blocked.
+        """
         result = language_detector.check(text)
 
         assert result.allowed is True

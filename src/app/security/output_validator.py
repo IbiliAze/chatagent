@@ -1,3 +1,5 @@
+"""Checks LLM output for harmful content and PII before it reaches the user."""
+
 import re
 from dataclasses import dataclass
 
@@ -6,12 +8,16 @@ from app.security.pii_detector.pii_detector import PIIDetector
 
 @dataclass(frozen=True)
 class ValidationResult:
+    """Whether output passed validation, and the (possibly redacted) text to return."""
+
     is_valid: bool
     output: str
     reason: str | None = None
 
 
 class OutputValidator:
+    """Blocks harmful content and masks PII in LLM output."""
+
     HARMFUL_PATTERNS = [
         re.compile(r'password is', re.IGNORECASE),
         re.compile(r'api\s?key is', re.IGNORECASE),

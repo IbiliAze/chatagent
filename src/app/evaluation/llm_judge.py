@@ -1,3 +1,5 @@
+"""LLM-as-judge scoring of a response's correctness, relevance, clarity, and completeness."""
+
 import json
 from dataclasses import dataclass
 from typing import Optional
@@ -9,6 +11,8 @@ from langsmith import traceable  # pyright: ignore[reportUnknownVariableType]
 
 @dataclass(frozen=True)
 class LLMJudgeResponse:
+    """Per-criterion judge scores, or an error if the judge's output was unparsable."""
+
     correctness: int
     relevance: int
     clarity: int
@@ -18,6 +22,8 @@ class LLMJudgeResponse:
 
 
 class LLMJudge:
+    """Scores a response against a question using an LLM as the judge."""
+
     def __init__(self, llm: ChatOpenAI) -> None:
         self.llm = llm
 

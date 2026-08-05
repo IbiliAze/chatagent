@@ -1,3 +1,5 @@
+"""Conditional-edge routing functions for the researcher graph."""
+
 from typing import Literal, cast
 
 from langchain_core.messages import AIMessage
@@ -7,9 +9,12 @@ from app.agents.researcher.state import ResearcherState
 
 
 class ResearcherRoutes:
+    """Routing decisions for the researcher graph's conditional edges."""
+
     def route_from_triage(
         self, state: ResearcherState
     ) -> Literal['billing', 'sales', 'support', 'end']:
+        """Route to the specialist triage selected, or end if none."""
         agent = state['current_agent']
         routable_agents: list[ResearcherAgent] = ['billing', 'sales', 'support']
         if agent in routable_agents:

@@ -1,3 +1,5 @@
+"""Tests for SecurityGuard's classification of safe vs. unsafe input against a mocked LLM."""
+
 from unittest.mock import Mock
 
 import pytest
@@ -11,15 +13,19 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def mock_llm() -> Mock:
+    """A mocked ChatOpenAI standing in for the real classifier LLM."""
     return Mock(spec=ChatOpenAI)
 
 
 @pytest.fixture
 def security_guard(mock_llm: Mock) -> SecurityGuard:
+    """Build a SecurityGuard backed by the mocked LLM."""
     return SecurityGuard(mock_llm)
 
 
 class TestSecurityGuardCheck:
+    """security_check's handling of the mocked LLM's classification and edge cases."""
+
     @pytest.mark.parametrize(
         'text',
         [

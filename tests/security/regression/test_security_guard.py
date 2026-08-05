@@ -1,3 +1,5 @@
+"""Regression tests locking in SecurityGuard's classification on known inputs."""
+
 import os
 
 import pytest
@@ -19,6 +21,7 @@ pytestmark = [
 
 @pytest.fixture
 def security_guard() -> SecurityGuard:
+    """Build a SecurityGuard backed by a real gpt-4o-mini call."""
     return SecurityGuard(ChatOpenAI(model='gpt-4o-mini', temperature=0))
 
 
@@ -32,6 +35,7 @@ class TestSecurityGuardRegression:
     def test_known_input_still_classified_correctly(
         self, security_guard: SecurityGuard, case: SecurityRegressionCase
     ) -> None:
+        """A known input still classifies with its expected safe/unsafe verdict."""
         result = security_guard.security_check(case['input'])
 
         assert result.safe is case['expect_safe']

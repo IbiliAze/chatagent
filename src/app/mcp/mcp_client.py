@@ -1,3 +1,5 @@
+"""Sync-callable client for loading tools from a remote MCP server."""
+
 import asyncio
 import threading
 from collections.abc import Coroutine

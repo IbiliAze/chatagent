@@ -1,3 +1,5 @@
+"""Combined regex + GLiNER PII detection and masking."""
+
 from dataclasses import dataclass
 from typing import cast
 
@@ -19,6 +21,8 @@ type PIIMatches = dict[EntityType, Matches]
 
 @dataclass(frozen=True)
 class ScanResult:
+    """PII found in a scan, grouped by entity type, plus the redacted text."""
+
     pii_found: PIIMatches
     cleaned: str
 

@@ -1,3 +1,5 @@
+"""Interactive smoke-test script for the researcher agent graph."""
+
 from uuid import uuid4
 
 from langchain_community.vectorstores import OpenSearchVectorSearch

@@ -1,3 +1,5 @@
+"""Regression tests locking in LLMJudge's scoring on known good/bad responses."""
+
 import os
 
 import pytest
@@ -19,6 +21,7 @@ pytestmark = [
 
 @pytest.fixture
 def judge() -> LLMJudge:
+    """Build an LLMJudge backed by a real gpt-4o-mini call."""
     return LLMJudge(ChatOpenAI(model='gpt-4o-mini', temperature=0))
 
 
@@ -29,6 +32,7 @@ class TestLLMJudgeRegression:
     def test_known_response_still_scores_as_expected(
         self, judge: LLMJudge, case: JudgeRegressionCase
     ) -> None:
+        """A known response's overall score stays within its expected bounds."""
         result = judge.judge(case['question'], case['response'])
 
         if case['overall_at_least'] is not None:

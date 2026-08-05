@@ -1,3 +1,5 @@
+"""The researcher graph: triage plus sales/billing/support specialists."""
+
 from collections.abc import Iterator
 from typing import cast
 
@@ -21,6 +23,8 @@ from core.config.settings import get_settings
 
 
 class ResearcherAgent:
+    """Builds and runs the triage/specialist LangGraph state machine."""
+
     def __init__(
         self,
         nodes: ResearcherNodes,

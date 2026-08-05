@@ -1,3 +1,5 @@
+"""Fallback chain that tries multiple LLMs in order until one succeeds."""
+
 from dataclasses import dataclass
 
 from langchain_anthropic import ChatAnthropic
@@ -10,6 +12,8 @@ type ModelType = list[tuple[ModelName, ChatOpenAI | ChatAnthropic]]
 
 @dataclass(frozen=True)
 class InvokeResult:
+    """The model that answered a query, and its response."""
+
     model_name: str
     result: str
 
@@ -38,6 +42,7 @@ class FallBackChain:
 
     @traceable(name='fallback_invoke')
     def invoke(self, query: str, use_cache: bool = True) -> InvokeResult:
+        """Answer the query, trying each model in order until one succeeds."""
         if use_cache and query in self.cache:
             return InvokeResult(model_name='cache', result=self.cache['query'])
 

@@ -1,3 +1,5 @@
+"""Response models for the cache endpoints."""
+
 from pydantic import BaseModel
 
 from app.cache.cache import CacheStats

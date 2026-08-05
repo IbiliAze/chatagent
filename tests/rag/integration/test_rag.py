@@ -1,3 +1,5 @@
+"""Integration tests for Rag against a real OpenSearch instance."""
+
 from collections.abc import Iterator
 from datetime import datetime
 from typing import Any, cast
@@ -28,6 +30,7 @@ DISTRACTORS = [
 
 @pytest.fixture(scope='session')
 def vector_store() -> OpenSearchVectorSearch:
+    """Provision a clean OpenSearch document index for the whole test session."""
     opensearch = OpenSearch()
 
     # Drop the index so every run exercises provision_indexes against a clean cluster.
@@ -51,18 +54,23 @@ def vector_store() -> OpenSearchVectorSearch:
 
 @pytest.fixture
 def rag(vector_store: OpenSearchVectorSearch) -> Rag:
+    """Build a Rag instance backed by the real vector store."""
     return Rag(vector_store)
 
 
 @pytest.fixture(autouse=True)
 def _empty_index(rag: Rag) -> Iterator[None]:
+    """Clear the document index before and after each test."""
     rag.clear()
     yield
     rag.clear()
 
 
 class TestAddition:
+    """Indexing behaviour of add_documents and add_texts against real OpenSearch."""
+
     def test_add_documents_indexes_chunks(self, rag: Rag) -> None:
+        """add_documents indexes the document and it becomes queryable."""
         assert rag.get_document_count() == 0
 
         number_of_chunks = rag.add_documents(
@@ -74,6 +82,7 @@ class TestAddition:
         assert rag.get_document_count() == 1
 
     def test_add_texts_indexes_chunks(self, rag: Rag) -> None:
+        """add_texts indexes the text and it becomes queryable."""
         number_of_chunks = rag.add_texts(
             texts=['My small text'], source='Test text source'
         )
@@ -82,6 +91,7 @@ class TestAddition:
         assert rag.get_document_count() == 1
 
     def test_long_document_is_split_across_several_chunks(self, rag: Rag) -> None:
+        """A document longer than the chunk size is indexed as multiple chunks."""
         long_text = '. '.join(f'Sentence number {i} about chunking' for i in range(200))
 
         number_of_chunks = rag.add_texts(texts=[long_text], source='Long text source')
@@ -90,9 +100,12 @@ class TestAddition:
         assert rag.get_document_count() == number_of_chunks
 
     def test_indexed_chunks_carry_source_and_timestamp(self, rag: Rag) -> None:
-        # Regression test for the strict mapping: metadata fields the index does not
-        # declare are rejected outright, so a successful write is not proof of a
-        # round trip.
+        """Indexed chunks round-trip their source and indexed_at metadata.
+
+        Regression test for the strict mapping: metadata fields the index does not
+        declare are rejected outright, so a successful write is not proof of a
+        round trip.
+        """
         rag.add_texts(texts=['Anything'], source='metadata-source')
 
         response = cast(
@@ -111,6 +124,7 @@ class TestAddition:
         assert datetime.fromisoformat(metadata['indexed_at'])
 
     def test_clear_removes_every_document(self, rag: Rag) -> None:
+        """clear() removes every previously indexed document."""
         rag.add_texts(texts=['one', 'two'], source='Test text source')
         assert rag.get_document_count() == 2
 
@@ -120,7 +134,10 @@ class TestAddition:
 
 
 class TestQueryResponse:
+    """ask's ranking and result limits against real indexed documents."""
+
     def test_ask_ranks_the_relevant_document_first(self, rag: Rag) -> None:
+        """Among distractors, the semantically relevant document ranks first."""
         rag.add_texts(texts=DISTRACTORS, source='distractor')
         rag.add_texts(texts=[KNOWLEDGE], source='eight-mile')
 
@@ -130,6 +147,7 @@ class TestQueryResponse:
         assert KNOWLEDGE in response
 
     def test_ask_returns_at_most_four_documents(self, rag: Rag) -> None:
+        """ask never returns more than the top-4 retrieved documents."""
         rag.add_texts(texts=[*DISTRACTORS, KNOWLEDGE], source='corpus')
 
         response = rag.ask('Who are Eight Mile?')
@@ -137,4 +155,5 @@ class TestQueryResponse:
         assert response.count('[Source ') == 4
 
     def test_ask_on_an_empty_index_returns_placeholder(self, rag: Rag) -> None:
+        """Querying an empty index returns the placeholder message."""
         assert rag.ask('Who are Eight Mile?') == 'No relevant documents found.'

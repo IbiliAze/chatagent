@@ -1,3 +1,5 @@
+"""Main chat endpoint: security checks, caching, agent invocation, and metrics."""
+
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, Request

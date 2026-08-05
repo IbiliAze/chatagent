@@ -1,3 +1,5 @@
+"""Document indexing and retrieval over an OpenSearch vector store."""
+
 from datetime import datetime
 
 from langchain_community.vectorstores import OpenSearchVectorSearch
@@ -11,6 +13,8 @@ from core.logging.logger import logger
 
 
 class Rag:
+    """Indexes documents into OpenSearch and answers queries via similarity search."""
+
     def __init__(self, vectorstore: OpenSearchVectorSearch) -> None:
         self.settings = get_settings()
         self.vectorstore = vectorstore
@@ -59,6 +63,7 @@ class Rag:
         return response['count']
 
     def ask(self, query: str) -> str:
+        """Retrieve documents relevant to the query and format them for a prompt."""
         try:
             retriever = self._build_retriever()
             documents = retriever.invoke(query)

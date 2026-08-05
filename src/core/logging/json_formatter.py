@@ -1,3 +1,5 @@
+"""JSON log formatter for log aggregation."""
+
 import json
 import logging
 from datetime import UTC, datetime

@@ -1,3 +1,5 @@
+"""OpenSearch-backed cache that matches queries by semantic similarity."""
+
 import asyncio
 from collections import Counter, deque
 from hashlib import sha256
@@ -135,6 +137,7 @@ class SemanticCache(Cache):
         )
 
     async def get_stats(self) -> CacheStats:
+        """Get cache statistics."""
         if not await self.vectorstore.async_client.indices.exists(
             index=self.settings.opensearch_cache_index
         ):

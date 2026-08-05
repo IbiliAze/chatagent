@@ -1,3 +1,5 @@
+"""Decorator that retries a function with exponential backoff on exception."""
+
 from collections.abc import Callable
 from functools import wraps
 from time import sleep

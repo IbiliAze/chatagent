@@ -1,7 +1,11 @@
+"""Fixed question/response pairs with expected score bounds for LLMJudge regression tests."""
+
 from typing import Optional, TypedDict
 
 
 class JudgeRegressionCase(TypedDict):
+    """One known question/response pair with the score bounds it must satisfy."""
+
     question: str
     response: str
     overall_at_least: Optional[int]

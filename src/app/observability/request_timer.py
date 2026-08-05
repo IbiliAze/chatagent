@@ -1,3 +1,5 @@
+"""Context manager for measuring elapsed wall-clock time."""
+
 import time
 from types import TracebackType
 from typing import Self

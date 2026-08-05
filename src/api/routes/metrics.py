@@ -1,3 +1,5 @@
+"""Metrics summary endpoint."""
+
 from dataclasses import asdict
 
 from api.main import app, metrics

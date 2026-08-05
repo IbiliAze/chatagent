@@ -1,3 +1,5 @@
+"""Response model for the metrics endpoint."""
+
 from pydantic import BaseModel
 
 

@@ -1,3 +1,5 @@
+"""Tool definitions available to the researcher agent's specialists."""
+
 from langchain_core.tools import BaseTool, StructuredTool
 
 from app.mcp.mcp_client import McpClient
@@ -6,6 +8,8 @@ from core.config.settings import get_settings
 
 
 class ResearcherTools:
+    """Assembles the RAG and MCP-backed tools the specialists can call."""
+
     def __init__(self, rag: Rag, mcp_client: McpClient) -> None:
         settings = get_settings()
         self.remote_name = settings.mcp_remote_name
