@@ -40,17 +40,42 @@ class AvailableCache:
     hash: HashCache
 
 
-# Bound by lifespan(), so it exists only once startup has run. Modules that need
-# it must reach through the module (main.cache) at request time rather than
+# Bound by lifespan(), so they exist only once startup has run. Modules that need
+# them must reach through the module (main.cache) at request time rather than
 # importing the name, which would raise ImportError at import time.
 cache: AvailableCache
+security: SecurityPipeline
+metrics: MetricsCollector
+agent: ResearcherAgent
+token_budget: TokenBudget
+
+
+def _build_security_pipeline(models: Models) -> SecurityPipeline:
+    """Assemble the security pipeline from its component checks."""
+    pii_detector = PIIDetector()
+    return SecurityPipeline(
+        pii_detector=pii_detector,
+        output_validator=OutputValidator(pii_detector=pii_detector),
+        security_guard=SecurityGuard(llm=models.primary_llm),
+        input_sanitiser=InputSanitiser(),
+        language_detector=LanguageDetector(),
+    )
+
+
+def _build_agent(
+    models: Models, rag: Rag, mcp_client: McpClient, saver: SqliteSaver
+) -> ResearcherAgent:
+    """Assemble the researcher agent from its nodes, routes, and tools."""
+    tools = ResearcherTools(rag=rag, mcp_client=mcp_client)
+    nodes = ResearcherNodes(models=models, tools=tools.load_tools())
+    return ResearcherAgent(nodes=nodes, routes=ResearcherRoutes(), saver=saver)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):  # pylint: disable=unused-argument
     """Initialise all components."""
 
-    global security, cache, metrics, agent, token_budget
+    global security, cache, metrics, agent, token_budget  # pylint: disable=global-statement
 
     settings = get_settings()
 
@@ -67,31 +92,16 @@ async def lifespan(app: FastAPI):
     )
 
     models = Models()
-
     mcp_client = McpClient(name='eightmile')
 
     token_budget = TokenBudget()
-    input_sanitiser = InputSanitiser()
-    pii_detector = PIIDetector()
-    language_detector = LanguageDetector()
-    security_guard = SecurityGuard(llm=models.primary_llm)
-    output_validator = OutputValidator(pii_detector=pii_detector)
-    security = SecurityPipeline(
-        pii_detector=pii_detector,
-        output_validator=output_validator,
-        security_guard=security_guard,
-        input_sanitiser=input_sanitiser,
-        language_detector=language_detector,
-    )
+    security = _build_security_pipeline(models)
+
     opensearch = OpenSearch()
     opensearch.provision_indexes(embedding_dimension=1536)
     rag = Rag(opensearch.document_vectorstore)
 
     db_path = 'checkpoints.db'
-    routes = ResearcherRoutes()
-    tools = ResearcherTools(rag=rag, mcp_client=mcp_client)
-    tool_list = tools.load_tools()
-    nodes = ResearcherNodes(models=models, tools=tool_list)
 
     cache = AvailableCache(
         semantic=SemanticCache(vectorstore=opensearch.cache_vectorstore),
@@ -104,7 +114,7 @@ async def lifespan(app: FastAPI):
     with ExitStack() as stack:
         saver = stack.enter_context(SqliteSaver.from_conn_string(db_path))
         saver.setup()
-        agent = ResearcherAgent(nodes=nodes, routes=routes, saver=saver)
+        agent = _build_agent(models=models, rag=rag, mcp_client=mcp_client, saver=saver)
 
         maintenance = asyncio.create_task(cache.semantic.maintenance())
 
@@ -122,7 +132,7 @@ async def lifespan(app: FastAPI):
             # cancellation or interpreter teardown can interrupt the await.
             try:
                 await cache.semantic.run_maintenance_once()
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 logger.exception('Final cache maintenance failed')
 
             logger.info('Shutting down...', extra={'extra_data': metrics.get_summary()})
@@ -139,5 +149,7 @@ app.state.limiter = limiter
 
 
 @app.exception_handler(RateLimitExceeded)
-async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+async def rate_limit_handler(  # pylint: disable=unused-argument
+    request: Request, exc: RateLimitExceeded
+):
     """Handle requests that exceed the rate limit."""
