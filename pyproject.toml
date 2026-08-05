@@ -67,3 +67,6 @@ markers = [
     "integration: makes real network calls to external services (slow, needs credentials)",
     "regression: replays a fixed dataset against real LLM calls to catch quality drift",
 ]
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = ["redefined-outer-name", "unnecessary-ellipsis"]
