@@ -5,7 +5,7 @@ from api.main import app
 from api.models.cache import CacheResponse
 
 
-@app.post('/cache/stats', response_model=CacheResponse)
+@app.get('/cache/stats', response_model=CacheResponse)
 async def cache_stats() -> CacheResponse:
     """Get cache stats"""
 

@@ -6,7 +6,7 @@ from api.models.health import HealthResponse
 from core.config.settings import get_settings
 
 
-@app.post('/health', response_model=HealthResponse)
+@app.get('/health', response_model=HealthResponse)
 async def health():
     """Get health"""
 

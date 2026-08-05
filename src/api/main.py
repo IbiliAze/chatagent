@@ -43,6 +43,9 @@ class AvailableCache:
 # Bound by lifespan(), so they exist only once startup has run. Modules that need
 # them must reach through the module (main.cache) at request time rather than
 # importing the name, which would raise ImportError at import time.
+opensearch = OpenSearch()
+opensearch.provision_indexes(embedding_dimension=1536)
+rag = Rag(opensearch.document_vectorstore)
 cache: AvailableCache
 security: SecurityPipeline
 metrics: MetricsCollector
@@ -96,10 +99,6 @@ async def lifespan(app: FastAPI):  # pylint: disable=unused-argument
 
     token_budget = TokenBudget()
     security = _build_security_pipeline(models)
-
-    opensearch = OpenSearch()
-    opensearch.provision_indexes(embedding_dimension=1536)
-    rag = Rag(opensearch.document_vectorstore)
 
     db_path = 'checkpoints.db'
 
