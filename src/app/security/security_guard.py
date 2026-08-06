@@ -54,7 +54,7 @@ class SecurityGuard:
         """Check if user input is safe."""
         try:
             decision = self.chain.invoke({'input': user_input})
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             logger.exception('security_check failed')
             return SecurityCheckResult(
                 safe=False, reason='Failed to parse security check'
