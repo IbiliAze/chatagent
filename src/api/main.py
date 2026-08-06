@@ -46,7 +46,7 @@ def _build_security_pipeline(models: Models) -> SecurityPipeline:
     return SecurityPipeline(
         pii_detector=pii_detector,
         output_validator=OutputValidator(pii_detector=pii_detector),
-        security_guard=SecurityGuard(llm=models.primary_llm),
+        security_guard=SecurityGuard(models=models),
         input_sanitiser=InputSanitiser(),
         language_detector=LanguageDetector(),
     )

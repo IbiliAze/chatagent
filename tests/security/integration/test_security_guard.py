@@ -4,14 +4,15 @@ import os
 from typing import TypedDict
 
 import pytest
-from langchain_openai import ChatOpenAI
 
 from app.security.security_guard import SecurityGuard
+from core.models.models import Models
 
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        not os.environ.get('OPENAI_API_KEY'), reason='requires a real OPENAI_API_KEY'
+        not (os.environ.get('OPENAI_API_KEY') and os.environ.get('ANTHROPIC_API_KEY')),
+        reason='requires real OPENAI_API_KEY and ANTHROPIC_API_KEY',
     ),
 ]
 
@@ -25,8 +26,8 @@ class UnsafeInputCase(TypedDict):
 
 @pytest.fixture
 def security_guard() -> SecurityGuard:
-    """Build a SecurityGuard backed by a real gpt-4o-mini call."""
-    return SecurityGuard(ChatOpenAI(model='gpt-4o-mini', temperature=0))
+    """Build a SecurityGuard backed by the real primary/fallback model chain."""
+    return SecurityGuard(Models())
 
 
 class TestSecurityGuardIntegration:
