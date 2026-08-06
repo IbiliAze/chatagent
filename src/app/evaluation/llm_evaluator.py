@@ -11,6 +11,8 @@ from langsmith.evaluation import (
 )
 from langsmith.schemas import Example, Run
 
+from core.logging.logger import logger
+
 type Input = dict[Literal['question'], str]
 type Output = dict[Literal['answer'], str]
 
@@ -82,6 +84,6 @@ class LLMEvaluator:
                 inputs=ex['inputs'], outputs=ex['outputs'], dataset_id=dataset.id
             )
 
-        print(f'Created a dataset with {len(examples)} datasets.')
+        logger.debug(f'Created a dataset with {len(examples)} datasets.')
 
         return dataset_name

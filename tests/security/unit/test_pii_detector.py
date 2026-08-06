@@ -62,10 +62,6 @@ class TestDetect:
 
         found = detector.detect(text)
 
-        print(found)
-        print(found)
-        print(found)
-
         assert len(found['EMAIL']) == 2
 
 

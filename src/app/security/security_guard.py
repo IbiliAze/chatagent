@@ -51,7 +51,6 @@ class SecurityGuard:
     def security_check(self, user_input: str) -> SecurityCheckResult:
         """Check if user input is safe."""
         response = self.chain.invoke({'input': user_input})
-        print(response.content)
 
         if not isinstance(response.content, str):
             return SecurityCheckResult(
