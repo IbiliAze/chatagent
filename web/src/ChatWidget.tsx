@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ChatApiError, sendChatMessage } from './api';
 import { getOrCreateThreadId, resetThreadId } from './threadId';
 import type { ChatMessage } from './types';
@@ -259,7 +261,17 @@ export default function ChatWidget() {
               {messages.map((m) => (
                 <div key={m.id} className={`bubble-row ${m.role}`}>
                   <div className={`bubble ${m.role} ${m.isError ? 'error' : ''}`}>
-                    <div className="bubble-text">{m.text}</div>
+                    <div
+                      className={`bubble-text ${
+                        m.role === 'assistant' && !m.isError ? 'markdown' : ''
+                      }`}
+                    >
+                      {m.role === 'assistant' && !m.isError ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
+                      ) : (
+                        m.text
+                      )}
+                    </div>
                     <div className="bubble-meta">
                       {m.role === 'assistant' && !m.isError && (
                         <>
