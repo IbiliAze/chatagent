@@ -62,6 +62,6 @@ class SecurityGuard:
 
         logger.info(
             'security_check',
-            extra={'safe': decision.safe, 'reason': decision.reason},
+            extra={'extra_data': {'safe': decision.safe, 'reason': decision.reason}},
         )
         return SecurityCheckResult(safe=decision.safe, reason=decision.reason)

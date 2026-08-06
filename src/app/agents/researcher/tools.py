@@ -30,7 +30,9 @@ class ResearcherTools:
 
     def _get_relevant_documents(self, query: str) -> str:
         """Search for information relevant to the query from RAG."""
-        logger.info('RAG invokation triggered by query', extra={'query': query})
+        logger.info(
+            'RAG invokation triggered by query', extra={'extra_data': {'query': query}}
+        )
         return self.rag.ask(query)
 
     def _search_company_knowledge(self) -> BaseTool:

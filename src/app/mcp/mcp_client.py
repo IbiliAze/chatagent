@@ -130,7 +130,13 @@ class McpClient:
         async def call(**kwargs: Any) -> Any:
             logger.info(
                 'MCP tool invocation triggered',
-                extra={'tool': tool_name, 'server': self.name, 'kwargs': kwargs},
+                extra={
+                    'extra_data': {
+                        'tool': tool_name,
+                        'server': self.name,
+                        'kwargs': kwargs,
+                    }
+                },
             )
             try:
                 return await coroutine(**kwargs)

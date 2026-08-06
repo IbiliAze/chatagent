@@ -19,6 +19,7 @@ from app.agents.researcher.state import (
     TriageUpdate,
 )
 from core.config.types import AvailableModels
+from core.logging.logger import logger
 from core.models.models import Models
 
 load_dotenv()
@@ -43,6 +44,10 @@ class ResearcherNodes:
         decision = self.triage_llm.invoke(messages)
 
         if decision.handoff_to == 'end':
+            logger.info(
+                'Triage responding directly without handoff',
+                extra={'extra_data': {'reason': decision.reason}},
+            )
             response = self.llm.invoke(
                 [
                     SystemMessage(
@@ -63,6 +68,16 @@ class ResearcherNodes:
                 'model_used': model_used,
                 'handoff_reason': '',
             }
+
+        logger.info(
+            'Triage handing off to specialist',
+            extra={
+                'extra_data': {
+                    'handoff_to': decision.handoff_to,
+                    'reason': decision.reason,
+                }
+            },
+        )
 
         return {
             'context_summary': decision.context,
