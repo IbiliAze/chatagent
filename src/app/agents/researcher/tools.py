@@ -5,6 +5,7 @@ from langchain_core.tools import BaseTool, StructuredTool
 from app.mcp.mcp_client import McpClient
 from app.rag.rag import Rag
 from core.config.settings import get_settings
+from core.logging.logger import logger
 
 
 class ResearcherTools:
@@ -29,6 +30,7 @@ class ResearcherTools:
 
     def _get_relevant_documents(self, query: str) -> str:
         """Search for information relevant to the query from RAG."""
+        logger.debug('RAG invokation triggered by query', extra={'query': query})
         return self.rag.ask(query)
 
     def _search_company_knowledge(self) -> BaseTool:
@@ -45,6 +47,7 @@ class ResearcherTools:
         Talks to the MCP server to read the tool's schema, so load it once at
         startup rather than per request.
         """
+        logger.debug('Loading search_company_knowledge tool from MCP server')
         return self.mcp_client.load_tool(
             self.remote_name, name='search_company_knowledge'
         )

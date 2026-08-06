@@ -128,6 +128,10 @@ class McpClient:
             return (f'{tool_name} is temporarily unavailable.', None)
 
         async def call(**kwargs: Any) -> Any:
+            logger.debug(
+                'MCP tool invocation triggered',
+                extra={'tool': tool_name, 'server': self.name, 'kwargs': kwargs},
+            )
             try:
                 return await coroutine(**kwargs)
             except ToolException:
