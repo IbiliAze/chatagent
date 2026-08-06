@@ -128,7 +128,7 @@ class McpClient:
             return (f'{tool_name} is temporarily unavailable.', None)
 
         async def call(**kwargs: Any) -> Any:
-            logger.debug(
+            logger.info(
                 'MCP tool invocation triggered',
                 extra={'tool': tool_name, 'server': self.name, 'kwargs': kwargs},
             )
