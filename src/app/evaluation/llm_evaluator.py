@@ -84,6 +84,6 @@ class LLMEvaluator:
                 inputs=ex['inputs'], outputs=ex['outputs'], dataset_id=dataset.id
             )
 
-        logger.debug(f'Created a dataset with {len(examples)} datasets.')
+        logger.debug('Created a dataset with %d datasets.', len(examples))
 
         return dataset_name
