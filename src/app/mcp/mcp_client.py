@@ -118,13 +118,18 @@ class McpClient:
         coroutine = remote.coroutine
         tool_name = name or remote.name
 
-        def unavailable() -> tuple[str, None]:
+        def unavailable(e: Exception) -> tuple[str, None]:
             """Report a broken server to the model instead of failing the graph.
 
             Only reached for transport and timeout failures: a tool that ran and
             returned isError already arrives as readable content.
             """
-            logger.exception('MCP tool %r on %r failed', remote.name, self.name)
+            logger.exception(
+                'MCP tool %r on %r failed',
+                remote.name,
+                self.name,
+                extra={'extra_data': {'error': str(e)}},
+            )
             return (f'{tool_name} is temporarily unavailable.', None)
 
         async def call(**kwargs: Any) -> Any:
@@ -142,8 +147,8 @@ class McpClient:
                 return await coroutine(**kwargs)
             except ToolException:
                 raise
-            except Exception:  # pylint: disable=broad-exception-caught
-                return unavailable()
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                return unavailable(e)
 
         def call_sync(**kwargs: Any) -> Any:
             # Drives call() rather than the adapter's coroutine directly: an async def
@@ -154,8 +159,8 @@ class McpClient:
                 return self._run(call(**kwargs))
             except ToolException:
                 raise
-            except Exception:  # pylint: disable=broad-exception-caught
-                return unavailable()
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                return unavailable(e)
 
         return StructuredTool(
             name=tool_name,
