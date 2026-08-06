@@ -8,6 +8,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langsmith import traceable  # pyright: ignore[reportUnknownVariableType]
 
+from core.logging.logger import logger
+
 load_dotenv()
 
 
@@ -59,7 +61,11 @@ class SecurityGuard:
 
         try:
             content = json.loads(response.content)
-            return SecurityCheckResult(safe=content['safe'], reason=content['reason'])
+            safe = content['safe']
+            reason = content['reason']
+
+            logger.info(content, extra={'safe': safe, 'reason': reason})
+            return SecurityCheckResult(safe=safe, reason=reason)
         except json.JSONDecodeError:
             return SecurityCheckResult(
                 safe=False, reason='Failed to parse security check'
