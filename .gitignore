@@ -17,3 +17,5 @@ wheels/
 
 # Data
 checkpoints.db*
+# DeepEval local run cache
+.deepeval/

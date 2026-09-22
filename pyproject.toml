@@ -41,6 +41,7 @@ packages = ["src/app", "src/core", "src/api"]
 
 [dependency-groups]
 dev = [
+    "deepeval>=4.2.5",
     "httpx>=0.28.1",
     "pylint>=4.0.6",
     "pytest>=9.1.1",
@@ -66,6 +67,7 @@ asyncio_mode = "auto"
 markers = [
     "integration: makes real network calls to external services (slow, needs credentials)",
     "regression: replays a fixed dataset against real LLM calls to catch quality drift",
+    "eval: scores real agent output with DeepEval LLM-judge metrics (slow, costs tokens)",
 ]
 
 [tool.pylint."MESSAGES CONTROL"]
