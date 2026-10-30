@@ -4,7 +4,7 @@ A FastAPI chat agent built on LangGraph, with security guardrails (input sanitis
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.12+ (`.python-version`, or `mise.toml` — use `mise install`)
 - [uv](https://docs.astral.sh/uv/)
 - Docker (for OpenSearch, used by RAG and the semantic cache)
 
