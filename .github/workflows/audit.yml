@@ -1,0 +1,25 @@
+name: Audit
+
+on: [push, pull_request]
+
+jobs:
+  # Dependency gate. osv-scanner reads uv.lock (the Python backend) and
+  # web/yarn.lock (the React chat widget) and fails on any advisory OSV knows
+  # that osv-scanner.toml does not list. It reads the two lockfiles only, so it
+  # installs nothing and builds nothing, and the checkout is mounted read-only.
+  # There is no deploy or publish job in this repo yet; when one is added it
+  # must `needs: audit`. osv-scanner cannot tell dev from production packages in
+  # a yarn v1 lockfile, so web dev tooling (vite and its build chain) is gated
+  # too. Same scanner and digest as acs-api's scan:dependencies; bump the tag and
+  # the digest together.
+  audit:
+    name: test:audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan uv.lock and web/yarn.lock with osv-scanner
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE":/src:ro \
+            ghcr.io/google/osv-scanner:v2.6.0@sha256:afd838850ac1a0fcc15ff4a041dc9ba11123c3f0d2666217a5f0fcf9222b55fa \
+            scan source --config=/src/osv-scanner.toml \
+            -L /src/uv.lock -L /src/web/yarn.lock

@@ -1,0 +1,14 @@
+# Advisories the test:audit CI job (.github/workflows/audit.yml) lets through.
+# The job fails on every other advisory OSV knows for a package in uv.lock or
+# web/yarn.lock, and on these too once their ignoreUntil date passes. Each entry
+# says why the advisory does not apply to chatagent. osv-scanner cannot tell dev
+# from production packages in a yarn v1 lockfile, so an advisory in web dev
+# tooling that cannot be fixed goes here, with a reason saying it is dev-only.
+# Delete an entry as soon as the version it was written for is gone.
+#
+# None today: uv.lock and web/yarn.lock had no known advisory on 2026-10-30.
+#
+# [[IgnoredVulns]]
+# id = "GHSA-xxxx-xxxx-xxxx"
+# ignoreUntil = 2026-12-31
+# reason = "..."
